@@ -13,7 +13,12 @@ import {
 function readReferences(formData: FormData) {
   const labels = formData.getAll("referenceLabel").map(String);
   const urls = formData.getAll("referenceUrl").map(String);
-  return labels.map((label, i) => ({ label, url: urls[i] ?? "" }));
+  const driveFileIds = formData.getAll("referenceDriveFileId").map(String);
+  return labels.map((label, i) => ({
+    label,
+    url: urls[i] ?? "",
+    driveFileId: driveFileIds[i] || undefined,
+  }));
 }
 
 // Any input named "field_<key>" is a structured field (Content Modules
