@@ -1,17 +1,20 @@
-export default function ExperimentsPage() {
+import { LibraryListPage } from "@/components/knowledge/LibraryListPage";
+
+// Single-collection destination — no mini-hub in front of it (Application
+// Architecture v1 Section 4).
+export default async function ExperimentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
+  const { type } = await searchParams;
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
-        Experiments
-      </h1>
-      <p className="mt-2 text-sm text-muted">
-        Every test as one object: hypothesis, results, learnings, winner.
-      </p>
-      <div className="mt-8 rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
-        This module is scaffolded but not yet built. It will become a
-        Library-backed List/Detail view per the Content Modules and
-        Knowledge Graph architecture docs.
-      </div>
-    </div>
+    <LibraryListPage
+      libraryKey="experiments"
+      basePath="/experiments"
+      activeTypeKey={type}
+      flat
+    />
   );
 }
