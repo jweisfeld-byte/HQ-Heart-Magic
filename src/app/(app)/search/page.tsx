@@ -39,30 +39,34 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
-        AI Search
-      </h1>
-      <p className="mt-1 text-sm text-muted">
-        Ask a question about what&apos;s in Knowledge, Marketing, Creative,
-        Creators, Analytics, or Experiments. Answers only ever come from
-        what&apos;s actually on file — if nothing&apos;s recorded, it says so.
-      </p>
+      {/* Sticky so the question box stays reachable while scrolling a long
+          answer/source list, per Jacob's ask. */}
+      <div className="sticky top-0 z-10 -mx-8 bg-background px-8 pb-6 pt-8">
+        <h1 className="font-display text-2xl font-semibold text-foreground">
+          AI Search
+        </h1>
+        <p className="mt-1 text-sm text-muted">
+          Ask a question about what&apos;s in Knowledge, Marketing, Creative,
+          Creators, Analytics, or Experiments. Answers only ever come from
+          what&apos;s actually on file — if nothing&apos;s recorded, it says so.
+        </p>
 
-      <form action="/search" method="get" className="mt-6 flex gap-2">
-        <input
-          name="q"
-          type="text"
-          defaultValue={query}
-          placeholder="e.g. Which coffee hooks have won?"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-        />
-        <button
-          type="submit"
-          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-        >
-          Search
-        </button>
-      </form>
+        <form action="/search" method="get" className="mt-6 flex gap-2">
+          <input
+            name="q"
+            type="text"
+            defaultValue={query}
+            placeholder="e.g. Which coffee hooks have won?"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            Search
+          </button>
+        </form>
+      </div>
 
       {query && (
         <div className="mt-6">
