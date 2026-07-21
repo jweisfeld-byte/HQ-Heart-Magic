@@ -30,6 +30,9 @@
   --font-display: var(--font-josefin);
 }
 
+/* Automatic default — respects the OS/browser preference (Design System
+   v1: "automatic is the right default... but should never be the only
+   option"). */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1a1512;
@@ -37,6 +40,23 @@
     --surface: #241d18;
     --border: #3a2f27;
   }
+}
+
+/* Explicit manual override, set from Settings → Profile (data-theme
+   attribute on <html>). Higher specificity than the media query above,
+   so it wins regardless of the system preference either direction. */
+:root[data-theme="dark"] {
+  --background: #1a1512;
+  --foreground: #f0e6d3;
+  --surface: #241d18;
+  --border: #3a2f27;
+}
+
+:root[data-theme="light"] {
+  --background: var(--color-warm-cream);
+  --foreground: var(--color-ink);
+  --surface: #ffffff;
+  --border: #e2d5bd;
 }
 
 body {
