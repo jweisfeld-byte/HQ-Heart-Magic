@@ -17,6 +17,14 @@ type BriefingLine = {
   detail: string;
 };
 
+const REVENUE_FOCUS_PEOPLE = ["Jacob", "Marco", "Chris"] as const;
+
+const REVENUE_FOCUS_LINES: BriefingLine[] = REVENUE_FOCUS_PEOPLE.map((name) => ({
+  label: `What's the one thing ${name} can do today to drive the most revenue?`,
+  status: "pending",
+  detail: "Waiting on a revenue-driver recommendation engine — no AI analysis pipeline exists yet (Backlog B7).",
+}));
+
 const STUB_BRIEFING_LINES: BriefingLine[] = [
   {
     label: "Top-performing creative",
@@ -273,6 +281,24 @@ export default async function DashboardPage() {
       <div className="mt-8 flex flex-col gap-3">
         {/* Today's tasks — clickable, expands into the full Tasks board */}
         <TasksPreviewCard tasksDueToday={tasksDueToday} allTasks={allTasks} users={users ?? []} />
+
+        {/* Per-person "one thing to drive revenue today" (Jacob's ask) —
+            same stub-card treatment as the rest of the not-yet-built
+            briefing lines below, just placed right under Today's tasks. */}
+        {REVENUE_FOCUS_LINES.map((line) => (
+          <div
+            key={line.label}
+            className="rounded-xl border border-border bg-surface p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-medium text-foreground">{line.label}</span>
+              <span className="shrink-0 rounded-full bg-accent-soft/30 px-2.5 py-0.5 text-xs font-medium text-accent">
+                Not connected yet
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted">{line.detail}</p>
+          </div>
+        ))}
 
         {/* Inventory alerts — live from Shopify once connected */}
         <div className="rounded-xl border border-border bg-surface p-4">
