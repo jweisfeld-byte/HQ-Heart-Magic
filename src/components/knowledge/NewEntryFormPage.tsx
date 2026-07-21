@@ -91,6 +91,18 @@ export async function NewEntryFormPage({
 
         <div>
           <label className="text-sm font-medium text-foreground">
+            File URL (optional — e.g. a Google Drive link)
+          </label>
+          <input
+            name="fileUrl"
+            type="url"
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+            placeholder="https://drive.google.com/..."
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">
             Tags (comma separated)
           </label>
           <input

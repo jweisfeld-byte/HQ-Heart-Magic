@@ -27,6 +27,7 @@ export async function createEntryAction(formData: FormData) {
     | "published"
     | "archived";
   const tagsRaw = String(formData.get("tags") ?? "");
+  const fileUrl = String(formData.get("fileUrl") ?? "").trim() || null;
 
   if (!libraryId || !entryTypeId || !title) {
     throw new Error("Title and entry type are required.");
@@ -43,6 +44,7 @@ export async function createEntryAction(formData: FormData) {
     title,
     body,
     status,
+    fileUrl,
     ownerEmail: user?.email ?? null,
   });
 
@@ -69,6 +71,7 @@ export async function updateEntryAction(formData: FormData) {
     | "published"
     | "archived";
   const tagsRaw = String(formData.get("tags") ?? "");
+  const fileUrl = String(formData.get("fileUrl") ?? "").trim() || null;
 
   if (!id || !title) {
     throw new Error("Title is required.");
@@ -81,7 +84,7 @@ export async function updateEntryAction(formData: FormData) {
 
   const result = await updateEntry(
     id,
-    { title, body, status },
+    { title, body, status, fileUrl },
     user?.email ?? null,
   );
 
