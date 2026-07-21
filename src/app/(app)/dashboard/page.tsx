@@ -121,7 +121,7 @@ export default async function DashboardPage() {
         <h1 className="font-display text-2xl font-semibold text-foreground">
           Good morning, {firstName}.
         </h1>
-        <p className="mt-1 text-sm italic text-muted">
+        <p className="mt-1 text-lg italic text-muted">
           &ldquo;{quote.text}&rdquo; <span className="not-italic">— {quote.author}</span>
         </p>
       </div>
