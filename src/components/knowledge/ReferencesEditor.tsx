@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type ReferenceRow = { label: string; url: string; driveFileId?: string };
 
 /**
  * Minimal shape of the bits of Google's Identity Services + Picker APIs
- * this component calls. Loaded lazily (only if "Pick from Google Drive"
- * is actually clicked), not typed by Google, so these are hand-written
+ * this component calls. Not typed by Google, so these are hand-written
  * rather than `any` scattered through the file.
  */
 type GoogleTokenClient = { requestAccessToken: () => void };
@@ -67,69 +66,27 @@ function loadScriptOnce(src: string): Promise<void> {
   });
 }
 
-async function openDrivePicker(): Promise<PickerDoc | null> {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY;
-
-  if (!clientId || !apiKey) {
-    const missing = [
-      !clientId && "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
-      !apiKey && "NEXT_PUBLIC_GOOGLE_PICKER_API_KEY",
-    ].filter(Boolean);
-    throw new Error(
-      `Google Drive isn't connected yet — missing: ${missing.join(", ")}.`,
-    );
+// Loads both Google scripts + the Picker module once, up front (on
+// mount), rather than on click. This matters: browsers only let a
+// popup open as a direct result of a user gesture (a click). If we
+// `await` network requests for these scripts *inside* the click
+// handler first, by the time `requestAccessToken()` finally runs, the
+// browser no longer considers it part of the original click — and it
+// silently blocks the sign-in popup (no error, no popup, just a
+// permanently "Opening Drive…" button). Preloading here means the
+// click handler can call `requestAccessToken()` immediately.
+let googleReadyPromise: Promise<void> | null = null;
+function ensureGoogleLoaded(): Promise<void> {
+  if (!googleReadyPromise) {
+    googleReadyPromise = (async () => {
+      await loadScriptOnce("https://accounts.google.com/gsi/client");
+      await loadScriptOnce("https://apis.google.com/js/api.js");
+      const gapi = window.gapi;
+      if (!gapi) throw new Error("Google API script failed to load.");
+      await new Promise<void>((resolve) => gapi.load("picker", resolve));
+    })();
   }
-
-  await loadScriptOnce("https://accounts.google.com/gsi/client");
-  await loadScriptOnce("https://apis.google.com/js/api.js");
-
-  const gapi = window.gapi;
-  if (!gapi) throw new Error("Google API script failed to load.");
-
-  await new Promise<void>((resolve) => gapi.load("picker", resolve));
-
-  const google = window.google;
-  if (!google) throw new Error("Google Identity Services script failed to load.");
-
-  return new Promise((resolve, reject) => {
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      // drive.file: only files the user explicitly picks or that this
-      // app creates — least-privilege, per Technical Architecture v1
-      // Section 6, not blanket read access to the whole Drive.
-      scope: "https://www.googleapis.com/auth/drive.file",
-      callback: (resp) => {
-        if (resp.error || !resp.access_token) {
-          reject(new Error(resp.error ?? "Google sign-in was cancelled."));
-          return;
-        }
-
-        const picker = gapi.picker;
-        if (!picker) {
-          reject(new Error("Google Picker failed to load."));
-          return;
-        }
-
-        new picker.PickerBuilder()
-          .addView(picker.ViewId.DOCS)
-          .setOAuthToken(resp.access_token as string)
-          .setDeveloperKey(apiKey)
-          .setCallback((data: PickerData) => {
-            if (data.action === picker.Action.PICKED && data.docs?.[0]) {
-              resolve(data.docs[0]);
-            } else if (data.action === "cancel") {
-              resolve(null);
-            }
-            // Ignore "loaded" and other transient picker lifecycle events.
-          })
-          .build()
-          .setVisible(true);
-      },
-    });
-
-    tokenClient.requestAccessToken();
-  });
+  return googleReadyPromise;
 }
 
 // Repeatable label+url rows, rendered as plain named inputs inside the
@@ -148,6 +105,69 @@ export function ReferencesEditor({ initial }: { initial: ReferenceRow[] }) {
   );
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+
+  const tokenClientRef = useRef<GoogleTokenClient | null>(null);
+  const resultHandlerRef = useRef<
+    ((doc: PickerDoc | null, error?: string) => void) | null
+  >(null);
+
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY;
+
+  // Kick off preloading as soon as the form renders, well before
+  // anyone clicks — and initialize the token client exactly once, per
+  // Google's own guidance for Identity Services (init once, call
+  // requestAccessToken() per click).
+  useEffect(() => {
+    if (!clientId || !apiKey) return;
+    ensureGoogleLoaded()
+      .then(() => {
+        const google = window.google;
+        if (!google) return;
+        tokenClientRef.current = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          // drive.file: only files the user explicitly picks or that
+          // this app creates — least-privilege, per Technical
+          // Architecture v1 Section 6, not blanket read access to the
+          // whole Drive.
+          scope: "https://www.googleapis.com/auth/drive.file",
+          callback: (resp) => {
+            const handler = resultHandlerRef.current;
+            if (!handler) return;
+
+            if (resp.error || !resp.access_token) {
+              handler(null, resp.error ?? "Google sign-in was cancelled.");
+              return;
+            }
+
+            const picker = window.gapi?.picker;
+            if (!picker) {
+              handler(null, "Google Picker failed to load.");
+              return;
+            }
+
+            new picker.PickerBuilder()
+              .addView(picker.ViewId.DOCS)
+              .setOAuthToken(resp.access_token as string)
+              .setDeveloperKey(apiKey)
+              .setCallback((data: PickerData) => {
+                if (data.action === picker.Action.PICKED && data.docs?.[0]) {
+                  handler(data.docs[0]);
+                } else if (data.action === "cancel") {
+                  handler(null);
+                }
+                // Ignore "loaded" and other transient picker lifecycle events.
+              })
+              .build()
+              .setVisible(true);
+          },
+        });
+      })
+      .catch(() => {
+        // Swallowed — handlePickFromDrive surfaces a fresh error if the
+        // user actually clicks before/without this ever succeeding.
+      });
+  }, [clientId, apiKey]);
 
   function update(index: number, field: "label" | "url", value: string) {
     setRows((prev) =>
@@ -170,19 +190,91 @@ export function ReferencesEditor({ initial }: { initial: ReferenceRow[] }) {
     );
   }
 
-  async function handlePickFromDrive() {
+  function handlePickFromDrive() {
     setPickerError(null);
-    setPicking(true);
-    try {
-      const doc = await openDrivePicker();
+
+    if (!clientId || !apiKey) {
+      const missing = [
+        !clientId && "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+        !apiKey && "NEXT_PUBLIC_GOOGLE_PICKER_API_KEY",
+      ].filter(Boolean);
+      setPickerError(`Google Drive isn't connected yet — missing: ${missing.join(", ")}.`);
+      return;
+    }
+
+    resultHandlerRef.current = (doc, error) => {
+      setPicking(false);
+      if (error) {
+        setPickerError(error);
+        return;
+      }
       if (doc) {
         addRow({ label: doc.name, url: doc.url, driveFileId: doc.id });
       }
-    } catch (err) {
-      setPickerError(err instanceof Error ? err.message : "Couldn't open Google Drive.");
-    } finally {
-      setPicking(false);
+    };
+
+    if (tokenClientRef.current) {
+      // Fast path: scripts + token client were already ready from the
+      // mount-time preload, so this call happens synchronously inside
+      // the click handler — the browser still sees it as a direct
+      // result of the click, so the popup opens normally.
+      setPicking(true);
+      tokenClientRef.current.requestAccessToken();
+      return;
     }
+
+    // Slow path: the page was clicked on faster than the preload could
+    // finish (rare). We still try, but a popup blocked here won't
+    // surface as an error — if this happens, asking the user to click
+    // once more (now that loading has caught up) resolves it.
+    setPicking(true);
+    ensureGoogleLoaded()
+      .then(() => {
+        const google = window.google;
+        if (!google) throw new Error("Google Identity Services failed to load.");
+        if (!tokenClientRef.current) {
+          tokenClientRef.current = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: "https://www.googleapis.com/auth/drive.file",
+            callback: (resp) => {
+              const handler = resultHandlerRef.current;
+              if (!handler) return;
+              if (resp.error || !resp.access_token) {
+                handler(null, resp.error ?? "Google sign-in was cancelled.");
+                return;
+              }
+              const picker = window.gapi?.picker;
+              if (!picker) {
+                handler(null, "Google Picker failed to load.");
+                return;
+              }
+              new picker.PickerBuilder()
+                .addView(picker.ViewId.DOCS)
+                .setOAuthToken(resp.access_token as string)
+                .setDeveloperKey(apiKey)
+                .setCallback((data: PickerData) => {
+                  if (data.action === picker.Action.PICKED && data.docs?.[0]) {
+                    handler(data.docs[0]);
+                  } else if (data.action === "cancel") {
+                    handler(null);
+                  }
+                })
+                .build()
+                .setVisible(true);
+            },
+          });
+        }
+        setPicking(false);
+        setPickerError(
+          "Drive was still loading — click “Pick from Google Drive” once more.",
+        );
+      })
+      .catch((err) => {
+        setPicking(false);
+        setPickerError(
+          err instanceof Error ? err.message : "Couldn't load Google Drive.",
+        );
+      });
   }
 
   return (
