@@ -146,6 +146,7 @@ export async function createEntry(input: {
   body: string;
   ownerEmail: string | null;
   status: Entry["status"];
+  fileUrl?: string | null;
 }): Promise<{ id: string } | { error: string }> {
   try {
     const supabase = createAdminClient();
@@ -158,6 +159,7 @@ export async function createEntry(input: {
         body: input.body,
         owner_email: input.ownerEmail,
         status: input.status,
+        file_url: input.fileUrl || null,
       })
       .select("id")
       .single();
@@ -173,7 +175,12 @@ export async function createEntry(input: {
 
 export async function updateEntry(
   id: string,
-  input: { title: string; body: string; status: Entry["status"] },
+  input: {
+    title: string;
+    body: string;
+    status: Entry["status"];
+    fileUrl?: string | null;
+  },
   editedBy: string | null,
 ): Promise<{ ok: true } | { error: string }> {
   try {
@@ -201,6 +208,7 @@ export async function updateEntry(
         title: input.title,
         body: input.body,
         status: input.status,
+        file_url: input.fileUrl || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);

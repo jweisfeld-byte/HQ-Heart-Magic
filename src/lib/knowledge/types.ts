@@ -26,6 +26,10 @@ export type Entry = {
   body: string;
   status: EntryStatus;
   owner_email: string | null;
+  // Optional link out to the actual asset (Google Drive, per Content
+  // Modules v1's fileRef field) — used by Creative Library entries,
+  // left blank elsewhere.
+  file_url: string | null;
   created_at: string;
   updated_at: string;
 };

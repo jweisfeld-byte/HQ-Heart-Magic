@@ -106,6 +106,19 @@ export async function EntryDetailFormPage({
 
           <div>
             <label className="text-sm font-medium text-foreground">
+              File URL (optional — e.g. a Google Drive link)
+            </label>
+            <input
+              name="fileUrl"
+              type="url"
+              defaultValue={entry.file_url ?? ""}
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              placeholder="https://drive.google.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground">
               Tags (comma separated)
             </label>
             <input
@@ -173,6 +186,17 @@ export async function EntryDetailFormPage({
             </span>
           ))}
         </div>
+      )}
+
+      {entry.file_url && (
+        <a
+          href={entry.file_url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-1 text-sm text-accent hover:underline"
+        >
+          Open asset ↗
+        </a>
       )}
 
       <div className="mt-6 whitespace-pre-wrap rounded-xl border border-border bg-surface p-5 text-sm text-foreground">
