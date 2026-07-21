@@ -2,6 +2,7 @@ import Link from "next/link";
 import { changeTaskStatusAction } from "@/app/(app)/tasks/actions";
 import { StatusSelect } from "@/components/tasks/StatusSelect";
 import type { Task } from "@/lib/tasks/queries";
+import { nameFromEmail } from "@/lib/format";
 
 // Cycled per group in order — same "colorful group header" look as
 // Monday's board grouping (Nov. Campaign in blue, Oct. Campaign in
@@ -43,7 +44,7 @@ function monthLabel(key: string) {
 
 function assigneeLabel(email: string | null) {
   if (!email) return "Unassigned";
-  return email.split("@")[0];
+  return nameFromEmail(email);
 }
 
 // The Monday.com-style board: grouped by month (due date), each group a
@@ -123,6 +124,14 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                           >
                             {t.title}
                           </Link>
+                          {t.recurrence && (
+                            <span
+                              className="ml-1.5 text-xs text-muted"
+                              title={`Repeats ${t.recurrence}`}
+                            >
+                              🔁
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-2 text-muted">
                           {assigneeLabel(t.assignee_email)}

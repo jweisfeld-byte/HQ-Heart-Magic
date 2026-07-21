@@ -8,11 +8,25 @@ import {
   setTaskStatus,
   updateTask,
   STATUSES,
+  RECURRENCES,
   type TaskStatus,
+  type Recurrence,
 } from "@/lib/tasks/queries";
 
 function isStatus(value: string): value is TaskStatus {
   return (STATUSES as readonly string[]).includes(value);
+}
+
+function parseRecurrence(value: string): Recurrence | null {
+  return (RECURRENCES as readonly string[]).includes(value)
+    ? (value as Recurrence)
+    : null;
+}
+
+function parsePercent(value: string): number | null {
+  if (!value.trim()) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 export async function createTaskAction(formData: FormData) {
@@ -35,6 +49,8 @@ export async function createTaskAction(formData: FormData) {
     assigneeEmail: String(formData.get("assigneeEmail") ?? "").trim() || null,
     dueDate: String(formData.get("dueDate") ?? "").trim() || null,
     projectId: String(formData.get("projectId") ?? "").trim() || null,
+    projectPercent: parsePercent(String(formData.get("projectPercent") ?? "")),
+    recurrence: parseRecurrence(String(formData.get("recurrence") ?? "")),
     createdBy: user?.email ?? null,
   });
 
@@ -63,6 +79,8 @@ export async function updateTaskAction(formData: FormData) {
     assigneeEmail: String(formData.get("assigneeEmail") ?? "").trim() || null,
     dueDate: String(formData.get("dueDate") ?? "").trim() || null,
     projectId: String(formData.get("projectId") ?? "").trim() || null,
+    projectPercent: parsePercent(String(formData.get("projectPercent") ?? "")),
+    recurrence: parseRecurrence(String(formData.get("recurrence") ?? "")),
   });
 
   if ("error" in result) {

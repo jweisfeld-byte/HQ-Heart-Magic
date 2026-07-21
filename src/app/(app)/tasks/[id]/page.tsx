@@ -5,10 +5,13 @@ import {
   STATUSES,
   STATUS_LABELS,
   STATUS_STYLES,
+  RECURRENCES,
+  RECURRENCE_LABELS,
 } from "@/lib/tasks/queries";
 import { updateTaskAction } from "@/app/(app)/tasks/actions";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects, getProjectById } from "@/lib/projects/queries";
+import { nameFromEmail } from "@/lib/format";
 
 function formatDate(iso: string | null) {
   if (!iso) return null;
@@ -124,19 +127,54 @@ export default async function TaskDetailPage({
             )}
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">
+                Project
+              </label>
+              <select
+                name="projectId"
+                defaultValue={task.project_id ?? ""}
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              >
+                <option value="">No project</option>
+                {(projects ?? []).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">
+                % of project
+              </label>
+              <input
+                name="projectPercent"
+                type="number"
+                min={0}
+                max={100}
+                step="0.1"
+                defaultValue={task.project_percent ?? ""}
+                placeholder="e.g. 20"
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium text-foreground">
-              Project
+              Repeats
             </label>
             <select
-              name="projectId"
-              defaultValue={task.project_id ?? ""}
+              name="recurrence"
+              defaultValue={task.recurrence ?? ""}
               className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
             >
-              <option value="">No project</option>
-              {(projects ?? []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
+              <option value="">Does not repeat</option>
+              {RECURRENCES.map((r) => (
+                <option key={r} value={r}>
+                  {RECURRENCE_LABELS[r]}
                 </option>
               ))}
             </select>
@@ -196,7 +234,7 @@ export default async function TaskDetailPage({
             </span>
             {task.assignee_email && (
               <span className="text-sm text-muted">
-                {task.assignee_email}
+                {nameFromEmail(task.assignee_email)}
               </span>
             )}
             {project && (
@@ -206,6 +244,11 @@ export default async function TaskDetailPage({
               >
                 {project.name}
               </Link>
+            )}
+            {task.recurrence && (
+              <span className="rounded-full bg-accent-soft/30 px-2.5 py-0.5 text-xs font-medium text-accent">
+                🔁 {RECURRENCE_LABELS[task.recurrence]}
+              </span>
             )}
           </div>
         </div>

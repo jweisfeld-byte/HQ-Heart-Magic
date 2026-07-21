@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createTaskAction } from "@/app/(app)/tasks/actions";
-import { STATUSES, STATUS_LABELS } from "@/lib/tasks/queries";
+import { STATUSES, STATUS_LABELS, RECURRENCES, RECURRENCE_LABELS } from "@/lib/tasks/queries";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects } from "@/lib/projects/queries";
 
@@ -93,19 +93,53 @@ export default async function NewTaskPage({
           )}
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-foreground">
+              Project
+            </label>
+            <select
+              name="projectId"
+              defaultValue={preselectedProject ?? ""}
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+            >
+              <option value="">No project</option>
+              {(projects ?? []).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-foreground">
+              % of project
+            </label>
+            <input
+              name="projectPercent"
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              placeholder="e.g. 20"
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="text-sm font-medium text-foreground">
-            Project
+            Repeats
           </label>
           <select
-            name="projectId"
-            defaultValue={preselectedProject ?? ""}
+            name="recurrence"
+            defaultValue=""
             className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
           >
-            <option value="">No project</option>
-            {(projects ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+            <option value="">Does not repeat</option>
+            {RECURRENCES.map((r) => (
+              <option key={r} value={r}>
+                {RECURRENCE_LABELS[r]}
               </option>
             ))}
           </select>

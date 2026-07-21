@@ -20,6 +20,7 @@ export async function createProjectAction(formData: FormData) {
   const result = await createProject({
     name,
     description: String(formData.get("description") ?? ""),
+    assigneeEmails: formData.getAll("assigneeEmails").map(String),
     createdBy: user?.email ?? null,
   });
 
@@ -42,6 +43,7 @@ export async function updateProjectAction(formData: FormData) {
   const result = await updateProject(id, {
     name,
     description: String(formData.get("description") ?? ""),
+    assigneeEmails: formData.getAll("assigneeEmails").map(String),
   });
 
   if ("error" in result) {

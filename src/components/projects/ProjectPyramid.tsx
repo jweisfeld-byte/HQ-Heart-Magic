@@ -1,16 +1,20 @@
 import type { Task } from "@/lib/tasks/queries";
 
-type PyramidTask = Pick<Task, "id" | "title" | "status">;
+type PyramidTask = Pick<Task, "id" | "title" | "status" | "project_percent">;
 
 // One horizontal slice per task (Jacob's ask), ordered bottom-to-top by
 // the order tasks were added — earliest/foundational task forms the
-// wide base, the most recently added task is the tip. Each slice is
-// sized equally (100 / task count) since that's the share of the
-// project each task represents, and is labeled with that percentage
-// via a leader line out to the right (keeps the label readable even
-// when a project has many thin slices). Slices render solid black
-// until their task's status flips to "done," at which point they fill
-// with the same rainbow used for the border-glow effect elsewhere.
+// wide base, the most recently added task is the tip. Each slice's
+// height is proportional to the task's manually-entered % share of the
+// project (task.project_percent) so the pyramid always reads as one
+// whole, even if the percentages people typed in don't add up to
+// exactly 100 — the label on each slice still shows the raw number
+// that was typed in, not the normalized one, so Jacob can see and fix
+// a mis-adding set of percentages. Tasks with no percent set yet fall
+// back to an equal split so they still show up instead of vanishing.
+// Slices render solid black until their task's status flips to "done,"
+// at which point they fill with the same rainbow used for the
+// border-glow effect elsewhere.
 export function ProjectPyramid({ tasks }: { tasks: PyramidTask[] }) {
   const n = tasks.length;
 
@@ -21,6 +25,14 @@ export function ProjectPyramid({ tasks }: { tasks: PyramidTask[] }) {
       </div>
     );
   }
+
+  const anySet = tasks.some((t) => t.project_percent !== null);
+  const sum = tasks.reduce((total, t) => total + (t.project_percent ?? 0), 0);
+  const useEqualSplit = !anySet || sum <= 0;
+
+  const shares = tasks.map((t) =>
+    useEqualSplit ? 1 / n : (t.project_percent ?? 0) / sum,
+  );
 
   const apexX = 150;
   const baseHalfWidth = 130;
@@ -34,12 +46,22 @@ export function ProjectPyramid({ tasks }: { tasks: PyramidTask[] }) {
   const widthAtFraction = (f: number) => f * baseHalfWidth * 2;
   const yAtFraction = (f: number) => apexY + f * (baseY - apexY);
 
-  // tasks[0] is the oldest/bottom slice (level N-1 from the apex);
-  // tasks[n-1] is the newest/tip slice (level 0 from the apex).
+  // tasks[0] is the oldest/bottom slice; tasks[n-1] is the newest/tip
+  // slice. Cumulative share (from the apex down) sets each boundary.
+  const reversedBounds = shares.slice().reverse().reduce<
+    { bounds: (readonly [number, number])[]; total: number }
+  >(
+    (acc, share) => {
+      const f0 = acc.total;
+      const f1 = f0 + share;
+      return { bounds: [...acc.bounds, [f0, f1] as const], total: f1 };
+    },
+    { bounds: [], total: 0 },
+  ).bounds;
+  const sliceBounds = reversedBounds.slice().reverse();
+
   const slices = tasks.map((task, index) => {
-    const level = n - 1 - index;
-    const f0 = level / n;
-    const f1 = (level + 1) / n;
+    const [f0, f1] = sliceBounds[index];
 
     const topWidth = widthAtFraction(f0);
     const bottomWidth = widthAtFraction(f1);
@@ -54,12 +76,17 @@ export function ProjectPyramid({ tasks }: { tasks: PyramidTask[] }) {
       "Z",
     ].join(" ");
 
-    const midF = (level + 0.5) / n;
+    const midF = (f0 + f1) / 2;
     const midY = yAtFraction(midF);
     const rightEdge = apexX + widthAtFraction(midF) / 2;
 
-    const pct = 100 / n;
-    const pctLabel = Number.isInteger(pct) ? `${pct}%` : `${pct.toFixed(1)}%`;
+    const raw = task.project_percent;
+    const pctLabel =
+      raw === null
+        ? "—"
+        : Number.isInteger(raw)
+          ? `${raw}%`
+          : `${raw.toFixed(1)}%`;
 
     return { task, path, midY, rightEdge, pctLabel, done: task.status === "done" };
   });

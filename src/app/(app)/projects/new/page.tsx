@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { createProjectAction } from "@/app/(app)/projects/actions";
+import { listWorkspaceUsers } from "@/lib/settings/queries";
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  const users = await listWorkspaceUsers();
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link href="/projects" className="text-sm text-muted hover:text-accent">
@@ -34,6 +37,31 @@ export default function NewProjectPage() {
             className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
             placeholder="Any context, links, or notes."
           />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">
+            Assigned to
+          </label>
+          {users && users.length > 0 ? (
+            <div className="mt-1 flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-3">
+              {users.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    name="assigneeEmails"
+                    value={u.email}
+                    className="h-4 w-4 accent-accent"
+                  />
+                  {u.email}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-muted">
+              No workspace users found yet.
+            </p>
+          )}
         </div>
 
         <div className="mt-2 flex gap-3">

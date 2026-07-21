@@ -24,11 +24,17 @@ export default async function ProjectsPage() {
     );
   }
 
-  const tasksByProject = new Map<string, { status: TaskStatus }[]>();
+  const tasksByProject = new Map<
+    string,
+    { status: TaskStatus; project_percent: number | null }[]
+  >();
   for (const t of allTasks ?? []) {
     if (!t.project_id) continue;
     const list = tasksByProject.get(t.project_id) ?? [];
-    list.push({ status: t.status as TaskStatus });
+    list.push({
+      status: t.status as TaskStatus,
+      project_percent: t.project_percent,
+    });
     tasksByProject.set(t.project_id, list);
   }
 
@@ -75,6 +81,7 @@ export default async function ProjectsPage() {
                       id: String(i),
                       title: "",
                       status: t.status,
+                      project_percent: t.project_percent,
                     }))}
                   />
                 </div>

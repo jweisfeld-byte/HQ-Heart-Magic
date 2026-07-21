@@ -12,6 +12,7 @@ export type Project = {
   id: string;
   name: string;
   description: string;
+  assignee_emails: string[];
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -51,6 +52,7 @@ export async function getProjectById(id: string): Promise<Project | null> {
 export async function createProject(input: {
   name: string;
   description: string;
+  assigneeEmails: string[];
   createdBy: string | null;
 }): Promise<{ id: string } | { error: string }> {
   try {
@@ -60,6 +62,7 @@ export async function createProject(input: {
       .insert({
         name: input.name,
         description: input.description,
+        assignee_emails: input.assigneeEmails,
         created_by: input.createdBy,
       })
       .select("id")
@@ -76,7 +79,7 @@ export async function createProject(input: {
 
 export async function updateProject(
   id: string,
-  input: { name: string; description: string },
+  input: { name: string; description: string; assigneeEmails: string[] },
 ): Promise<{ ok: true } | { error: string }> {
   try {
     const supabase = createAdminClient();
@@ -85,6 +88,7 @@ export async function updateProject(
       .update({
         name: input.name,
         description: input.description,
+        assignee_emails: input.assigneeEmails,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -100,17 +104,20 @@ export async function updateProject(
 // the Projects hub compute each pyramid's progress without an N+1
 // query per project card.
 export async function getAllProjectTasks(): Promise<
-  Pick<Task, "id" | "project_id" | "status">[] | null
+  Pick<Task, "id" | "project_id" | "status" | "project_percent">[] | null
 > {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("task")
-      .select("id, project_id, status")
+      .select("id, project_id, status, project_percent")
       .not("project_id", "is", null);
 
     if (error) return null;
-    return data as Pick<Task, "id" | "project_id" | "status">[];
+    return data as Pick<
+      Task,
+      "id" | "project_id" | "status" | "project_percent"
+    >[];
   } catch {
     return null;
   }
