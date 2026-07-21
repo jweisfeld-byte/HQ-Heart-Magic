@@ -48,8 +48,13 @@ export async function GET(request: NextRequest) {
   });
 
   if (!tokenRes.ok) {
+    const bodyText = await tokenRes.text().catch(() => "<unreadable body>");
     return NextResponse.json(
-      { error: "Shopify token exchange failed.", status: tokenRes.status },
+      {
+        error: "Shopify token exchange failed.",
+        status: tokenRes.status,
+        shopifyResponse: bodyText,
+      },
       { status: 502 },
     );
   }
