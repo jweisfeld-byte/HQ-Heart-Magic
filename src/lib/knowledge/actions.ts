@@ -16,6 +16,20 @@ function readReferences(formData: FormData) {
   return labels.map((label, i) => ({ label, url: urls[i] ?? "" }));
 }
 
+// Any input named "field_<key>" is a structured field (Content Modules
+// v1's fieldSchema) — collected purely by naming convention so this
+// action never needs to know which module's schema sent it.
+function readStructuredFields(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith("field_") && typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) out[key.slice("field_".length)] = trimmed;
+    }
+  }
+  return out;
+}
+
 // Shared across every mini-hub (/knowledge, /marketing, /creative, ...) —
 // one engine, many modules (Application Architecture v1, Section 1).
 // Each caller passes its own basePath ("/knowledge", "/marketing") via a
@@ -43,6 +57,7 @@ export async function createEntryAction(formData: FormData) {
     | "archived";
   const tagsRaw = String(formData.get("tags") ?? "");
   const references = readReferences(formData);
+  const structuredFields = readStructuredFields(formData);
 
   if (!libraryId || !entryTypeId || !title) {
     throw new Error("Title and entry type are required.");
@@ -59,6 +74,7 @@ export async function createEntryAction(formData: FormData) {
     title,
     body,
     status,
+    structuredFields,
     ownerEmail: user?.email ?? null,
   });
 
@@ -90,6 +106,7 @@ export async function updateEntryAction(formData: FormData) {
     | "archived";
   const tagsRaw = String(formData.get("tags") ?? "");
   const references = readReferences(formData);
+  const structuredFields = readStructuredFields(formData);
 
   if (!id || !title) {
     throw new Error("Title is required.");
@@ -102,7 +119,7 @@ export async function updateEntryAction(formData: FormData) {
 
   const result = await updateEntry(
     id,
-    { title, body, status },
+    { title, body, status, structuredFields },
     user?.email ?? null,
   );
 

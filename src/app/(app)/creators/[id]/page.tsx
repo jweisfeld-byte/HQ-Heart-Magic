@@ -1,4 +1,5 @@
 import { EntryDetailFormPage } from "@/components/knowledge/EntryDetailFormPage";
+import { CREATOR_PROFILE_FIELDS } from "@/lib/knowledge/fieldSchemas";
 
 export default async function CreatorEntryDetailPage({
   params,
@@ -17,6 +18,9 @@ export default async function CreatorEntryDetailPage({
       basePath="/creators"
       edit={Boolean(edit)}
       flat
+      fieldSchema={CREATOR_PROFILE_FIELDS}
+      photoFieldKey="photo_url"
+      subtitleFieldKey="handle"
     />
   );
 }

@@ -30,6 +30,10 @@ export type Entry = {
   // Modules v1's fileRef field) — used by Creative Library entries,
   // left blank elsewhere.
   file_url: string | null;
+  // Engineer-defined key/value fields (Content Modules v1's
+  // EntryType.fieldSchema) — e.g. Creator Profile's photo/handle/contact
+  // fields. Empty object for entry types with no schema wired up.
+  structured_fields: Record<string, string>;
   created_at: string;
   updated_at: string;
 };
@@ -53,4 +57,14 @@ export type Reference = {
   drive_file_id: string | null;
   label: string;
   created_at: string;
+};
+
+// A small, engineer-defined set of key/value fields for one entry type
+// (Content Modules v1 Section 1: "never end-user-editable"). Passed in by
+// a module's route wrapper (e.g. Creators), not something the generic
+// engine invents on its own.
+export type FieldSchemaField = {
+  key: string;
+  label: string;
+  type: "text" | "url" | "email" | "tel";
 };

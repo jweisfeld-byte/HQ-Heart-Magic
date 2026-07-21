@@ -34,12 +34,21 @@ export async function LibraryListPage({
   hubLabel,
   activeTypeKey,
   flat = false,
+  variant = "table",
+  cardPhotoKey,
+  cardSubtitleKey,
 }: {
   libraryKey: string;
   basePath: string;
   hubLabel?: string;
   activeTypeKey?: string;
   flat?: boolean;
+  // "gallery": photo cards (name/handle) instead of a table — used by
+  // Creators. Same List View, same data, different rendering, per the
+  // Template G gallery pattern already used for Creative Library.
+  variant?: "table" | "gallery";
+  cardPhotoKey?: string;
+  cardSubtitleKey?: string;
 }) {
   const library = await getLibraryByKey(libraryKey);
 
@@ -138,6 +147,50 @@ export async function LibraryListPage({
               Create the first one
             </Link>
             .
+          </div>
+        ) : variant === "gallery" ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {entries.map((e) => {
+              const photo = cardPhotoKey
+                ? e.structured_fields[cardPhotoKey]
+                : undefined;
+              const subtitle = cardSubtitleKey
+                ? e.structured_fields[cardSubtitleKey]
+                : undefined;
+              const initial = e.title.trim().charAt(0).toUpperCase() || "?";
+
+              return (
+                <Link
+                  key={e.id}
+                  href={entryHref(e.id)}
+                  className="flex flex-col items-center rounded-xl border border-border bg-surface p-4 text-center transition hover:border-accent/40 hover:bg-accent/5"
+                >
+                  {photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={photo}
+                      alt={e.title}
+                      className="h-20 w-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent-soft/30 text-2xl font-semibold text-accent">
+                      {initial}
+                    </div>
+                  )}
+                  <p className="mt-3 font-medium text-foreground">{e.title}</p>
+                  {subtitle && (
+                    <p className="text-sm text-muted">{subtitle}</p>
+                  )}
+                  <span
+                    className={`mt-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      STATUS_STYLES[e.status] ?? STATUS_STYLES.draft
+                    }`}
+                  >
+                    {e.status}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-border bg-surface">

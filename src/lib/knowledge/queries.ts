@@ -196,6 +196,7 @@ export async function createEntry(input: {
   ownerEmail: string | null;
   status: Entry["status"];
   fileUrl?: string | null;
+  structuredFields?: Record<string, string>;
 }): Promise<{ id: string } | { error: string }> {
   try {
     const supabase = createAdminClient();
@@ -209,6 +210,7 @@ export async function createEntry(input: {
         owner_email: input.ownerEmail,
         status: input.status,
         file_url: input.fileUrl || null,
+        structured_fields: input.structuredFields ?? {},
       })
       .select("id")
       .single();
@@ -229,6 +231,7 @@ export async function updateEntry(
     body: string;
     status: Entry["status"];
     fileUrl?: string | null;
+    structuredFields?: Record<string, string>;
   },
   editedBy: string | null,
 ): Promise<{ ok: true } | { error: string }> {
@@ -258,6 +261,7 @@ export async function updateEntry(
         body: input.body,
         status: input.status,
         file_url: input.fileUrl || null,
+        structured_fields: input.structuredFields ?? {},
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
