@@ -105,15 +105,15 @@ export function TaskBoard({
             <p className={`text-xs font-semibold uppercase tracking-wide ${accent.text}`}>
               {label} · {group.length}
             </p>
-            <div className="mt-2 overflow-hidden rounded-xl border border-border bg-surface">
-              <table className="w-full text-sm">
+            <div className="mt-2 overflow-x-auto rounded-xl border border-border bg-surface">
+              <table className="w-full min-w-[820px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted">
-                    <th className="px-4 py-2 font-medium">Task</th>
-                    <th className="px-4 py-2 font-medium">Assignee</th>
-                    <th className="px-4 py-2 font-medium">Due date</th>
-                    <th className="px-4 py-2 font-medium">Repeat</th>
-                    <th className="px-4 py-2 font-medium">Status</th>
+                    <th className="min-w-[220px] px-4 py-2 font-medium">Task</th>
+                    <th className="min-w-[160px] px-4 py-2 font-medium">Assignee</th>
+                    <th className="min-w-[150px] px-4 py-2 font-medium">Due date</th>
+                    <th className="min-w-[140px] px-4 py-2 font-medium">Repeat</th>
+                    <th className="min-w-[150px] px-4 py-2 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -129,7 +129,7 @@ export function TaskBoard({
                             {t.title}
                           </Link>
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="whitespace-nowrap px-4 py-2">
                           <AssigneeSelect
                             id={t.id}
                             assigneeEmail={t.assignee_email}
@@ -137,7 +137,7 @@ export function TaskBoard({
                             action={changeTaskAssigneeAction}
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="whitespace-nowrap px-4 py-2">
                           <DueDateInput
                             id={t.id}
                             dueDate={t.due_date}
@@ -145,14 +145,14 @@ export function TaskBoard({
                             action={changeTaskDueDateAction}
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="whitespace-nowrap px-4 py-2">
                           <RecurrenceSelect
                             id={t.id}
                             recurrence={t.recurrence}
                             action={changeTaskRecurrenceAction}
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="whitespace-nowrap px-4 py-2">
                           <StatusSelect
                             id={t.id}
                             status={t.status}
