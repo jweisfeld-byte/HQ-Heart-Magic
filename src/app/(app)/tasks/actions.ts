@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createTask,
   setTaskStatus,
+  setTaskRecurrence,
+  setTaskAssignee,
+  setTaskDueDate,
   updateTask,
   STATUSES,
   RECURRENCES,
@@ -91,6 +94,61 @@ export async function updateTaskAction(formData: FormData) {
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
   redirect(`/tasks/${id}`);
+}
+
+export async function changeTaskRecurrenceAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const raw = String(formData.get("recurrence") ?? "");
+  const recurrence = parseRecurrence(raw);
+
+  if (!id) {
+    throw new Error("A task id is required.");
+  }
+
+  const result = await setTaskRecurrence(id, recurrence);
+  if ("error" in result) {
+    throw new Error(result.error);
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
+  revalidatePath("/projects");
+}
+
+export async function changeTaskAssigneeAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const assigneeEmail = String(formData.get("assigneeEmail") ?? "").trim() || null;
+
+  if (!id) {
+    throw new Error("A task id is required.");
+  }
+
+  const result = await setTaskAssignee(id, assigneeEmail);
+  if ("error" in result) {
+    throw new Error(result.error);
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
+  revalidatePath("/projects");
+}
+
+export async function changeTaskDueDateAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const dueDate = String(formData.get("dueDate") ?? "").trim() || null;
+
+  if (!id) {
+    throw new Error("A task id is required.");
+  }
+
+  const result = await setTaskDueDate(id, dueDate);
+  if ("error" in result) {
+    throw new Error(result.error);
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
+  revalidatePath("/projects");
 }
 
 export async function changeTaskStatusAction(formData: FormData) {

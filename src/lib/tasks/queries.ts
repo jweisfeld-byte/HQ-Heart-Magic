@@ -16,13 +16,15 @@ export const STATUSES = [
 
 export type TaskStatus = (typeof STATUSES)[number];
 
-export const RECURRENCES = ["weekly", "monthly"] as const;
+export const RECURRENCES = ["daily", "weekly", "monthly", "yearly"] as const;
 
 export type Recurrence = (typeof RECURRENCES)[number];
 
 export const RECURRENCE_LABELS: Record<Recurrence, string> = {
+  daily: "Daily",
   weekly: "Weekly",
   monthly: "Monthly",
+  yearly: "Yearly",
 };
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -165,10 +167,14 @@ export async function updateTask(
 
 function addInterval(dateStr: string, recurrence: Recurrence): string {
   const d = new Date(`${dateStr}T00:00:00`);
-  if (recurrence === "weekly") {
+  if (recurrence === "daily") {
+    d.setDate(d.getDate() + 1);
+  } else if (recurrence === "weekly") {
     d.setDate(d.getDate() + 7);
-  } else {
+  } else if (recurrence === "monthly") {
     d.setMonth(d.getMonth() + 1);
+  } else {
+    d.setFullYear(d.getFullYear() + 1);
   }
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -212,6 +218,60 @@ export async function setTaskStatus(
       });
     }
 
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function setTaskRecurrence(
+  id: string,
+  recurrence: Recurrence | null,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("task")
+      .update({ recurrence, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function setTaskAssignee(
+  id: string,
+  assigneeEmail: string | null,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("task")
+      .update({ assignee_email: assigneeEmail, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function setTaskDueDate(
+  id: string,
+  dueDate: string | null,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("task")
+      .update({ due_date: dueDate, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Unknown error." };

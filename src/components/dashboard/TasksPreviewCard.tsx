@@ -12,9 +12,11 @@ import { STATUS_LABELS, STATUS_STYLES, type Task } from "@/lib/tasks/queries";
 export function TasksPreviewCard({
   tasksDueToday,
   allTasks,
+  users = [],
 }: {
   tasksDueToday: Task[] | null;
   allTasks: Task[] | null;
+  users?: { id: string; email: string }[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const connected = tasksDueToday !== null;
@@ -78,7 +80,7 @@ export function TasksPreviewCard({
 
       {connected && expanded && (
         <div className="mt-4">
-          <TaskBoard tasks={allTasks ?? []} />
+          <TaskBoard tasks={allTasks ?? []} users={users} />
         </div>
       )}
     </div>

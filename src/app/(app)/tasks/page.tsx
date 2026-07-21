@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTasks } from "@/lib/tasks/queries";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
+import { listWorkspaceUsers } from "@/lib/settings/queries";
 
 // Monday.com-style board: grouped by month (due date), each group a
 // colored section — same "fast dropdown, not delightful" discipline as
@@ -8,7 +9,7 @@ import { TaskBoard } from "@/components/tasks/TaskBoard";
 // instead of grouped by status. The actual board rendering lives in
 // TaskBoard so the dashboard's "Today's tasks" card can reuse it verbatim.
 export default async function TasksPage() {
-  const tasks = await getTasks();
+  const [tasks, users] = await Promise.all([getTasks(), listWorkspaceUsers()]);
 
   if (tasks === null) {
     return (
@@ -42,7 +43,7 @@ export default async function TasksPage() {
       </div>
 
       <div className="mt-6">
-        <TaskBoard tasks={tasks} />
+        <TaskBoard tasks={tasks} users={users ?? []} />
       </div>
     </div>
   );

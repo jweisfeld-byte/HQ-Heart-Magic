@@ -9,7 +9,7 @@ import {
 import { getQuoteOfTheDay } from "@/lib/quotes";
 import { getTasks, getTasksDueToday } from "@/lib/tasks/queries";
 import { TasksPreviewCard } from "@/components/dashboard/TasksPreviewCard";
-import { getOrganizationSettings } from "@/lib/settings/queries";
+import { getOrganizationSettings, listWorkspaceUsers } from "@/lib/settings/queries";
 
 type BriefingLine = {
   label: string;
@@ -89,6 +89,7 @@ export default async function DashboardPage() {
     tasksDueToday,
     allTasks,
     org,
+    users,
   ] = await Promise.all([
     getLowInventoryVariants(),
     getRecentOrders(8),
@@ -98,6 +99,7 @@ export default async function DashboardPage() {
     getTasksDueToday(),
     getTasks(),
     getOrganizationSettings(),
+    listWorkspaceUsers(),
   ]);
 
   // Jacob's own upload (Settings > Appearance) wins over the default
@@ -270,7 +272,7 @@ export default async function DashboardPage() {
 
       <div className="mt-8 flex flex-col gap-3">
         {/* Today's tasks — clickable, expands into the full Tasks board */}
-        <TasksPreviewCard tasksDueToday={tasksDueToday} allTasks={allTasks} />
+        <TasksPreviewCard tasksDueToday={tasksDueToday} allTasks={allTasks} users={users ?? []} />
 
         {/* Inventory alerts — live from Shopify once connected */}
         <div className="rounded-xl border border-border bg-surface p-4">

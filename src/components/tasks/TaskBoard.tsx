@@ -1,8 +1,15 @@
 import Link from "next/link";
-import { changeTaskStatusAction } from "@/app/(app)/tasks/actions";
+import {
+  changeTaskStatusAction,
+  changeTaskAssigneeAction,
+  changeTaskDueDateAction,
+  changeTaskRecurrenceAction,
+} from "@/app/(app)/tasks/actions";
 import { StatusSelect } from "@/components/tasks/StatusSelect";
+import { AssigneeSelect } from "@/components/tasks/AssigneeSelect";
+import { DueDateInput } from "@/components/tasks/DueDateInput";
+import { RecurrenceSelect } from "@/components/tasks/RecurrenceSelect";
 import type { Task } from "@/lib/tasks/queries";
-import { nameFromEmail } from "@/lib/format";
 
 // Cycled per group in order — same "colorful group header" look as
 // Monday's board grouping (Nov. Campaign in blue, Oct. Campaign in
@@ -22,13 +29,6 @@ function isOverdue(iso: string | null, status: string) {
   return new Date(iso) < new Date(new Date().toDateString());
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 function monthKey(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -42,16 +42,19 @@ function monthLabel(key: string) {
   });
 }
 
-function assigneeLabel(email: string | null) {
-  if (!email) return "Unassigned";
-  return nameFromEmail(email);
-}
-
 // The Monday.com-style board: grouped by month (due date), each group a
 // colored section. Extracted out of /tasks so the exact same board can
 // also render inline inside the dashboard's "Today's tasks" card once
-// expanded (Jacob's ask), instead of duplicating this logic.
-export function TaskBoard({ tasks }: { tasks: Task[] }) {
+// expanded (Jacob's ask), instead of duplicating this logic. `users` is
+// passed in (rather than fetched here) so this stays a plain component
+// that a Client Component (TasksPreviewCard) can render directly.
+export function TaskBoard({
+  tasks,
+  users = [],
+}: {
+  tasks: Task[];
+  users?: { id: string; email: string }[];
+}) {
   if (tasks.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
@@ -109,6 +112,7 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                     <th className="px-4 py-2 font-medium">Task</th>
                     <th className="px-4 py-2 font-medium">Assignee</th>
                     <th className="px-4 py-2 font-medium">Due date</th>
+                    <th className="px-4 py-2 font-medium">Repeat</th>
                     <th className="px-4 py-2 font-medium">Status</th>
                   </tr>
                 </thead>
@@ -124,26 +128,29 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                           >
                             {t.title}
                           </Link>
-                          {t.recurrence && (
-                            <span
-                              className="ml-1.5 text-xs text-muted"
-                              title={`Repeats ${t.recurrence}`}
-                            >
-                              🔁
-                            </span>
-                          )}
                         </td>
-                        <td className="px-4 py-2 text-muted">
-                          {assigneeLabel(t.assignee_email)}
+                        <td className="px-4 py-2">
+                          <AssigneeSelect
+                            id={t.id}
+                            assigneeEmail={t.assignee_email}
+                            users={users}
+                            action={changeTaskAssigneeAction}
+                          />
                         </td>
-                        <td
-                          className={`px-4 py-2 ${
-                            overdue ? "font-medium text-red-600" : "text-muted"
-                          }`}
-                        >
-                          {t.due_date
-                            ? `${overdue ? "Overdue: " : ""}${formatDate(t.due_date)}`
-                            : "—"}
+                        <td className="px-4 py-2">
+                          <DueDateInput
+                            id={t.id}
+                            dueDate={t.due_date}
+                            overdue={overdue}
+                            action={changeTaskDueDateAction}
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <RecurrenceSelect
+                            id={t.id}
+                            recurrence={t.recurrence}
+                            action={changeTaskRecurrenceAction}
+                          />
                         </td>
                         <td className="px-4 py-2">
                           <StatusSelect

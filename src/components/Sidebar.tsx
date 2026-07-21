@@ -48,7 +48,7 @@ export function Sidebar() {
           className={`flex origin-left items-center gap-2.5 rounded-full border px-3 py-2 text-[16.8px] font-medium transition-all duration-200 ease-out ${
             active
               ? "scale-105 border-border text-accent"
-              : "scale-100 border-[color:var(--color-border)] text-foreground/80 hover:bg-accent/5"
+              : "scale-100 border-[color:var(--color-border)] text-foreground/80 hover:bg-accent/25"
           }`}
         >
           {item.iconSrc ? (

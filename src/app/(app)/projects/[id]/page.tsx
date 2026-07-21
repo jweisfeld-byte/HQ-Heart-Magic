@@ -111,7 +111,10 @@ export default async function ProjectDetailPage({
     );
   }
 
-  const tasks = (await getTasksForProject(project.id)) ?? [];
+  const [tasks, users] = await Promise.all([
+    getTasksForProject(project.id).then((t) => t ?? []),
+    listWorkspaceUsers(),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -171,7 +174,7 @@ export default async function ProjectDetailPage({
           Tasks
         </p>
         <div className="mt-3">
-          <TaskBoard tasks={tasks} />
+          <TaskBoard tasks={tasks} users={users ?? []} />
         </div>
       </div>
 
