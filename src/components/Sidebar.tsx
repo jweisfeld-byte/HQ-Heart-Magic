@@ -34,12 +34,11 @@ type NavItem = {
 export function Sidebar() {
   const pathname = usePathname();
 
-  // `glow` reuses the app-wide rotating-rainbow-ring effect (the same
+  // Every pill gets a plain static outline. The active/current-page
+  // pill swaps that for the app-wide rotating-rainbow-ring effect (the
   // `.border-border` hook every card/tile uses, gated by the Settings >
-  // Appearance toggle) — only the Settings pill gets it, per Jacob's
-  // ask, rather than every tab lighting up at once. Everything else
-  // gets a plain, static outline instead.
-  function renderItem(item: NavItem, glow = false) {
+  // Appearance toggle) instead of a solid background fill.
+  function renderItem(item: NavItem) {
     const active =
       pathname === item.href || pathname.startsWith(`${item.href}/`);
     return (
@@ -47,11 +46,9 @@ export function Sidebar() {
         <Link
           href={item.href}
           className={`flex origin-left items-center gap-2.5 rounded-full border px-3 py-2 text-[16.8px] font-medium transition-all duration-200 ease-out ${
-            glow ? "border-border" : "border-[color:var(--color-border)]"
-          } ${
             active
-              ? "scale-105 bg-accent/10 text-accent"
-              : "scale-100 text-foreground/80 hover:bg-accent/5"
+              ? "scale-105 border-border text-accent"
+              : "scale-100 border-[color:var(--color-border)] text-foreground/80 hover:bg-accent/5"
           }`}
         >
           {item.iconSrc ? (
@@ -73,11 +70,11 @@ export function Sidebar() {
           Heart Magic HQ
         </span>
       </div>
-      <ul className="flex flex-1 flex-col gap-1">
+      <ul className="flex flex-1 flex-col gap-2.5">
         {NAV_ITEMS.map((item) => renderItem(item))}
       </ul>
-      <ul className="flex flex-col gap-1 border-t border-border pt-3">
-        {renderItem(SETTINGS_ITEM, true)}
+      <ul className="flex flex-col gap-2.5 pt-3">
+        {renderItem(SETTINGS_ITEM)}
       </ul>
     </nav>
   );

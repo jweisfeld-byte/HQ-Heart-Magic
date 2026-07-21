@@ -69,25 +69,27 @@ export default async function ProjectDetailPage({
               Assigned to
             </label>
             {users && users.length > 0 ? (
-              <div className="mt-1 flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-3">
+              <select
+                name="assigneeEmails"
+                multiple
+                size={Math.min(6, users.length)}
+                defaultValue={project.assignee_emails}
+                className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              >
                 {users.map((u) => (
-                  <label key={u.id} className="flex items-center gap-2 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      name="assigneeEmails"
-                      value={u.email}
-                      defaultChecked={project.assignee_emails.includes(u.email)}
-                      className="h-4 w-4 accent-accent"
-                    />
+                  <option key={u.id} value={u.email}>
                     {u.email}
-                  </label>
+                  </option>
                 ))}
-              </div>
+              </select>
             ) : (
               <p className="mt-1 text-xs text-muted">
                 No workspace users found yet.
               </p>
             )}
+            <p className="mt-1 text-xs text-muted">
+              Cmd/Ctrl-click to select more than one.
+            </p>
           </div>
 
           <div className="mt-2 flex gap-3">
