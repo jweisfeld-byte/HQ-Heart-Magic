@@ -3,7 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createEntry, setTagsForEntry, updateEntry } from "./queries";
+import {
+  createEntry,
+  setReferencesForEntry,
+  setTagsForEntry,
+  updateEntry,
+} from "./queries";
+
+function readReferences(formData: FormData) {
+  const labels = formData.getAll("referenceLabel").map(String);
+  const urls = formData.getAll("referenceUrl").map(String);
+  return labels.map((label, i) => ({ label, url: urls[i] ?? "" }));
+}
 
 // Shared across every mini-hub (/knowledge, /marketing, /creative, ...) —
 // one engine, many modules (Application Architecture v1, Section 1).
@@ -27,7 +38,7 @@ export async function createEntryAction(formData: FormData) {
     | "published"
     | "archived";
   const tagsRaw = String(formData.get("tags") ?? "");
-  const fileUrl = String(formData.get("fileUrl") ?? "").trim() || null;
+  const references = readReferences(formData);
 
   if (!libraryId || !entryTypeId || !title) {
     throw new Error("Title and entry type are required.");
@@ -44,7 +55,6 @@ export async function createEntryAction(formData: FormData) {
     title,
     body,
     status,
-    fileUrl,
     ownerEmail: user?.email ?? null,
   });
 
@@ -55,6 +65,8 @@ export async function createEntryAction(formData: FormData) {
   if (tagsRaw.trim()) {
     await setTagsForEntry(result.id, tagsRaw.split(","));
   }
+
+  await setReferencesForEntry(result.id, references);
 
   revalidatePath(`${basePath}/${libraryKey}`);
   redirect(`${basePath}/${libraryKey}/${result.id}`);
@@ -71,7 +83,7 @@ export async function updateEntryAction(formData: FormData) {
     | "published"
     | "archived";
   const tagsRaw = String(formData.get("tags") ?? "");
-  const fileUrl = String(formData.get("fileUrl") ?? "").trim() || null;
+  const references = readReferences(formData);
 
   if (!id || !title) {
     throw new Error("Title is required.");
@@ -84,7 +96,7 @@ export async function updateEntryAction(formData: FormData) {
 
   const result = await updateEntry(
     id,
-    { title, body, status, fileUrl },
+    { title, body, status },
     user?.email ?? null,
   );
 
@@ -93,6 +105,7 @@ export async function updateEntryAction(formData: FormData) {
   }
 
   await setTagsForEntry(id, tagsRaw.split(","));
+  await setReferencesForEntry(id, references);
 
   revalidatePath(`${basePath}/${libraryKey}`);
   revalidatePath(`${basePath}/${libraryKey}/${id}`);

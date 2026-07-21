@@ -4,8 +4,10 @@ import { updateEntryAction } from "@/lib/knowledge/actions";
 import {
   getEntryById,
   getLibraryByKey,
+  getReferencesForEntry,
   getTagsForEntry,
 } from "@/lib/knowledge/queries";
+import { ReferencesEditor } from "@/components/knowledge/ReferencesEditor";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
@@ -38,7 +40,10 @@ export async function EntryDetailFormPage({
   const entry = await getEntryById(id);
   if (!entry || entry.library_id !== library.id) notFound();
 
-  const tags = await getTagsForEntry(entry.id);
+  const [tags, references] = await Promise.all([
+    getTagsForEntry(entry.id),
+    getReferencesForEntry(entry.id),
+  ]);
 
   if (edit) {
     return (
@@ -104,18 +109,12 @@ export async function EntryDetailFormPage({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-foreground">
-              File URL (optional — e.g. a Google Drive link)
-            </label>
-            <input
-              name="fileUrl"
-              type="url"
-              defaultValue={entry.file_url ?? ""}
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-              placeholder="https://drive.google.com/..."
-            />
-          </div>
+          <ReferencesEditor
+            initial={references.map((r) => ({
+              label: r.label,
+              url: r.url ?? "",
+            }))}
+          />
 
           <div>
             <label className="text-sm font-medium text-foreground">
@@ -188,15 +187,26 @@ export async function EntryDetailFormPage({
         </div>
       )}
 
-      {entry.file_url && (
-        <a
-          href={entry.file_url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-1 text-sm text-accent hover:underline"
-        >
-          Open asset ↗
-        </a>
+      {references.length > 0 && (
+        <div className="mt-4 rounded-xl border border-border bg-surface p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">
+            Linked documents
+          </p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {references.map((r) => (
+              <li key={r.id}>
+                <a
+                  href={r.url ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-accent hover:underline"
+                >
+                  {r.label} ↗
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="mt-6 whitespace-pre-wrap rounded-xl border border-border bg-surface p-5 text-sm text-foreground">

@@ -1,5 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Entry, EntryType, EntryWithType, Library, Tag } from "./types";
+import type {
+  Entry,
+  EntryType,
+  EntryWithType,
+  Library,
+  Reference,
+  Tag,
+} from "./types";
 
 /**
  * Every query here fails gracefully (returns null/[] rather than throwing)
@@ -137,6 +144,48 @@ export async function getTagsForEntry(entryId: string): Promise<Tag[]> {
   } catch {
     return [];
   }
+}
+
+export async function getReferencesForEntry(
+  entryId: string,
+): Promise<Reference[]> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("reference")
+      .select("*")
+      .eq("entry_id", entryId)
+      .order("created_at", { ascending: true });
+
+    if (error || !data) return [];
+    return data as Reference[];
+  } catch {
+    return [];
+  }
+}
+
+export async function setReferencesForEntry(
+  entryId: string,
+  refs: { label: string; url: string }[],
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const cleaned = refs
+    .map((r) => ({ label: r.label.trim(), url: r.url.trim() }))
+    .filter((r) => r.label && r.url);
+
+  await supabase.from("reference").delete().eq("entry_id", entryId);
+
+  if (cleaned.length === 0) return;
+
+  await supabase.from("reference").insert(
+    cleaned.map((r) => ({
+      entry_id: entryId,
+      label: r.label,
+      url: r.url,
+      target_type: "drive_file",
+    })),
+  );
 }
 
 export async function createEntry(input: {

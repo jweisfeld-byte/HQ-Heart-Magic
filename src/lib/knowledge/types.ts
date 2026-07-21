@@ -42,3 +42,15 @@ export type Tag = {
   id: string;
   name: string;
 };
+
+// One entry, many linked docs (Knowledge Graph v1 Section 4's Reference
+// model) — a Google Drive link, an article, etc.
+export type Reference = {
+  id: string;
+  entry_id: string;
+  target_type: string; // "url" | "drive_file"
+  url: string | null;
+  drive_file_id: string | null;
+  label: string;
+  created_at: string;
+};

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createEntryAction } from "@/lib/knowledge/actions";
 import { getEntryTypesForLibrary, getLibraryByKey } from "@/lib/knowledge/queries";
+import { ReferencesEditor } from "@/components/knowledge/ReferencesEditor";
 
 // Shared "New entry" form. basePath decides which module this posts back
 // to (/knowledge, /marketing, ...) via a hidden field the shared server
@@ -89,17 +90,7 @@ export async function NewEntryFormPage({
           />
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-foreground">
-            File URL (optional — e.g. a Google Drive link)
-          </label>
-          <input
-            name="fileUrl"
-            type="url"
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-            placeholder="https://drive.google.com/..."
-          />
-        </div>
+        <ReferencesEditor initial={[]} />
 
         <div>
           <label className="text-sm font-medium text-foreground">
