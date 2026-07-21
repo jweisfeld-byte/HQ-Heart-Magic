@@ -23,16 +23,20 @@ function formatDateTime(iso: string) {
 // shows the structured-field-free MVP edit form (title/status/body/tags).
 // Full block editor, version-history UI, and typed relationships are
 // intentionally out of scope for this first pass, across every module.
+// `flat` (Creators, Analytics, Experiments) means routes are
+// basePath/[id] rather than basePath/[libraryKey]/[id].
 export async function EntryDetailFormPage({
   libraryKey,
   id,
   basePath,
   edit,
+  flat = false,
 }: {
   libraryKey: string;
   id: string;
   basePath: string;
   edit: boolean;
+  flat?: boolean;
 }) {
   const library = await getLibraryByKey(libraryKey);
   if (!library) notFound();
@@ -45,13 +49,13 @@ export async function EntryDetailFormPage({
     getReferencesForEntry(entry.id),
   ]);
 
+  const listHref = flat ? basePath : `${basePath}/${library.key}`;
+  const detailHref = `${listHref}/${entry.id}`;
+
   if (edit) {
     return (
       <div className="mx-auto max-w-2xl">
-        <Link
-          href={`${basePath}/${library.key}/${entry.id}`}
-          className="text-sm text-muted hover:text-accent"
-        >
+        <Link href={detailHref} className="text-sm text-muted hover:text-accent">
           ← Cancel
         </Link>
         <h1 className="mt-1 font-display text-2xl font-semibold text-foreground">
@@ -62,6 +66,7 @@ export async function EntryDetailFormPage({
           <input type="hidden" name="basePath" value={basePath} />
           <input type="hidden" name="id" value={entry.id} />
           <input type="hidden" name="libraryKey" value={library.key} />
+          {flat && <input type="hidden" name="flat" value="1" />}
 
           <div>
             <label className="text-sm font-medium text-foreground">
@@ -135,7 +140,7 @@ export async function EntryDetailFormPage({
               Save changes
             </button>
             <Link
-              href={`${basePath}/${library.key}/${entry.id}`}
+              href={detailHref}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/5"
             >
               Cancel
@@ -148,10 +153,7 @@ export async function EntryDetailFormPage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
-        href={`${basePath}/${library.key}`}
-        className="text-sm text-muted hover:text-accent"
-      >
+      <Link href={listHref} className="text-sm text-muted hover:text-accent">
         ← {library.name}
       </Link>
 
@@ -167,7 +169,7 @@ export async function EntryDetailFormPage({
           </p>
         </div>
         <Link
-          href={`${basePath}/${library.key}/${entry.id}?edit=1`}
+          href={`${detailHref}?edit=1`}
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/5"
         >
           Edit

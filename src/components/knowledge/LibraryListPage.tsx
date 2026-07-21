@@ -23,19 +23,43 @@ const STATUS_STYLES: Record<string, string> = {
 // Shared Module List View (Template A): filterable by Entry Type, per the
 // Application Architecture v1 capability map (Section 2). Used by every
 // mini-hub's collections — the hub/basePath is the only thing that varies.
+//
+// `flat`: single-collection destinations (Creators, Analytics,
+// Experiments — Application Architecture v1 Section 4) skip the mini-hub
+// entirely, so their routes are basePath/[id] rather than
+// basePath/[libraryKey]/[id], and there's no hub to link back to.
 export async function LibraryListPage({
   libraryKey,
   basePath,
   hubLabel,
   activeTypeKey,
+  flat = false,
 }: {
   libraryKey: string;
   basePath: string;
-  hubLabel: string;
+  hubLabel?: string;
   activeTypeKey?: string;
+  flat?: boolean;
 }) {
   const library = await getLibraryByKey(libraryKey);
-  if (!library) notFound();
+
+  if (!library) {
+    // In flat mode the libraryKey is hardcoded by the route, not a URL
+    // param — a miss here means the schema/seed hasn't been run yet, not
+    // a genuine 404, so show the same honest empty state the mini-hubs
+    // use instead of a blank Next.js not-found page.
+    if (flat) {
+      return (
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
+            Not set up yet. Run the matching schema/seed file in the
+            Supabase SQL Editor to create this collection.
+          </div>
+        </div>
+      );
+    }
+    notFound();
+  }
 
   const entryTypes = await getEntryTypesForLibrary(library.id);
   const activeType = entryTypes.find((t) => t.key === activeTypeKey);
@@ -44,20 +68,29 @@ export async function LibraryListPage({
     entryTypeId: activeType?.id,
   });
 
+  const listHref = flat ? basePath : `${basePath}/${library.key}`;
+  const newHref = `${listHref}/new`;
+  const entryHref = (id: string) => `${listHref}/${id}`;
+
   return (
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <Link href={basePath} className="text-sm text-muted hover:text-accent">
-            ← {hubLabel}
-          </Link>
+          {!flat && (
+            <Link
+              href={basePath}
+              className="text-sm text-muted hover:text-accent"
+            >
+              ← {hubLabel}
+            </Link>
+          )}
           <h1 className="mt-1 font-display text-2xl font-semibold text-foreground">
             <span aria-hidden>{library.icon}</span> {library.name}
           </h1>
           <p className="mt-1 text-sm text-muted">{library.description}</p>
         </div>
         <Link
-          href={`${basePath}/${library.key}/new`}
+          href={newHref}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           New entry
@@ -67,7 +100,7 @@ export async function LibraryListPage({
       {entryTypes.length > 0 && (
         <div className="mt-6 flex flex-wrap gap-2">
           <Link
-            href={`${basePath}/${library.key}`}
+            href={listHref}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
               !activeType
                 ? "bg-accent text-white"
@@ -79,7 +112,7 @@ export async function LibraryListPage({
           {entryTypes.map((t) => (
             <Link
               key={t.id}
-              href={`${basePath}/${library.key}?type=${t.key}`}
+              href={`${listHref}?type=${t.key}`}
               className={`rounded-full px-3 py-1 text-xs font-medium ${
                 activeType?.id === t.id
                   ? "bg-accent text-white"
@@ -101,10 +134,7 @@ export async function LibraryListPage({
         ) : entries.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
             No entries yet.{" "}
-            <Link
-              href={`${basePath}/${library.key}/new`}
-              className="text-accent hover:underline"
-            >
+            <Link href={newHref} className="text-accent hover:underline">
               Create the first one
             </Link>
             .
@@ -125,7 +155,7 @@ export async function LibraryListPage({
                   <tr key={e.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-2 font-medium text-foreground">
                       <Link
-                        href={`${basePath}/${library.key}/${e.id}`}
+                        href={entryHref(e.id)}
                         className="hover:text-accent hover:underline"
                       >
                         {e.title}

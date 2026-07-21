@@ -19,7 +19,10 @@ function readReferences(formData: FormData) {
 // Shared across every mini-hub (/knowledge, /marketing, /creative, ...) —
 // one engine, many modules (Application Architecture v1, Section 1).
 // Each caller passes its own basePath ("/knowledge", "/marketing") via a
-// hidden form field so this logic isn't duplicated per module.
+// hidden form field so this logic isn't duplicated per module. `flat`
+// (Creators, Analytics, Experiments — single-collection destinations
+// that skip the mini-hub) means the list/detail routes are
+// basePath/[id] rather than basePath/[libraryKey]/[id].
 
 function normalizeBasePath(raw: string): string {
   const basePath = raw.trim();
@@ -28,6 +31,7 @@ function normalizeBasePath(raw: string): string {
 
 export async function createEntryAction(formData: FormData) {
   const basePath = normalizeBasePath(String(formData.get("basePath") ?? ""));
+  const flat = String(formData.get("flat") ?? "") === "1";
   const libraryId = String(formData.get("libraryId") ?? "");
   const libraryKey = String(formData.get("libraryKey") ?? "");
   const entryTypeId = String(formData.get("entryTypeId") ?? "");
@@ -68,12 +72,14 @@ export async function createEntryAction(formData: FormData) {
 
   await setReferencesForEntry(result.id, references);
 
-  revalidatePath(`${basePath}/${libraryKey}`);
-  redirect(`${basePath}/${libraryKey}/${result.id}`);
+  const listPath = flat ? basePath : `${basePath}/${libraryKey}`;
+  revalidatePath(listPath);
+  redirect(`${listPath}/${result.id}`);
 }
 
 export async function updateEntryAction(formData: FormData) {
   const basePath = normalizeBasePath(String(formData.get("basePath") ?? ""));
+  const flat = String(formData.get("flat") ?? "") === "1";
   const id = String(formData.get("id") ?? "");
   const libraryKey = String(formData.get("libraryKey") ?? "");
   const title = String(formData.get("title") ?? "").trim();
@@ -107,7 +113,8 @@ export async function updateEntryAction(formData: FormData) {
   await setTagsForEntry(id, tagsRaw.split(","));
   await setReferencesForEntry(id, references);
 
-  revalidatePath(`${basePath}/${libraryKey}`);
-  revalidatePath(`${basePath}/${libraryKey}/${id}`);
-  redirect(`${basePath}/${libraryKey}/${id}`);
+  const listPath = flat ? basePath : `${basePath}/${libraryKey}`;
+  revalidatePath(listPath);
+  revalidatePath(`${listPath}/${id}`);
+  redirect(`${listPath}/${id}`);
 }
