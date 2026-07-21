@@ -76,6 +76,12 @@ export default async function TasksPage() {
 
       {tasks.length === 0 ? (
         <div className="mt-8 rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/heart.svg"
+            alt=""
+            className="mx-auto mb-3 h-12 w-12 opacity-70"
+          />
           No tasks yet.{" "}
           <Link href="/tasks/new" className="text-accent hover:underline">
             Add the first one
