@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   createEntry,
+  deleteEntry,
   setReferencesForEntry,
   setTagsForEntry,
   updateEntry,
@@ -139,4 +140,24 @@ export async function updateEntryAction(formData: FormData) {
   revalidatePath(listPath);
   revalidatePath(`${listPath}/${id}`);
   redirect(`${listPath}/${id}`);
+}
+
+export async function deleteEntryAction(formData: FormData) {
+  const basePath = normalizeBasePath(String(formData.get("basePath") ?? ""));
+  const flat = String(formData.get("flat") ?? "") === "1";
+  const id = String(formData.get("id") ?? "");
+  const libraryKey = String(formData.get("libraryKey") ?? "");
+
+  if (!id) {
+    throw new Error("Missing entry id.");
+  }
+
+  const result = await deleteEntry(id);
+  if ("error" in result) {
+    throw new Error(result.error);
+  }
+
+  const listPath = flat ? basePath : `${basePath}/${libraryKey}`;
+  revalidatePath(listPath);
+  redirect(listPath);
 }

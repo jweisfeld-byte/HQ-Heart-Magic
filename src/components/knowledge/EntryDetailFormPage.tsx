@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { updateEntryAction } from "@/lib/knowledge/actions";
+import { deleteEntryAction, updateEntryAction } from "@/lib/knowledge/actions";
 import {
   getEntryById,
   getLibraryByKey,
@@ -8,6 +8,7 @@ import {
   getTagsForEntry,
 } from "@/lib/knowledge/queries";
 import { ReferencesEditor } from "@/components/knowledge/ReferencesEditor";
+import { DeleteEntryButton } from "@/components/knowledge/DeleteEntryButton";
 import type { FieldSchemaField } from "@/lib/knowledge/types";
 
 function formatDateTime(iso: string) {
@@ -232,12 +233,22 @@ export async function EntryDetailFormPage({
             </p>
           </div>
         </div>
-        <Link
-          href={`${detailHref}?edit=1`}
-          className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/5"
-        >
-          Edit
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`${detailHref}?edit=1`}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/5"
+          >
+            Edit
+          </Link>
+          <DeleteEntryButton
+            id={entry.id}
+            basePath={basePath}
+            libraryKey={library.key}
+            flat={flat}
+            action={deleteEntryAction}
+            title={entry.title}
+          />
+        </div>
       </div>
 
       {contactFields.length > 0 && (

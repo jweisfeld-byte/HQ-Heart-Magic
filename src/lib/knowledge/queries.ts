@@ -281,6 +281,22 @@ export async function updateEntry(
   }
 }
 
+// entry_tag, entry_version, and reference all have `on delete cascade`
+// FKs to entry (knowledge_schema.sql, references_schema.sql), so
+// deleting the entry row alone is enough to clean up its children.
+export async function deleteEntry(
+  id: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("entry").delete().eq("id", id);
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
 export async function setTagsForEntry(
   entryId: string,
   tagNames: string[],
