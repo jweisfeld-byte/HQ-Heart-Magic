@@ -52,9 +52,9 @@ export default async function IntegrationsSettingsPage() {
       action: null,
     },
     {
-      key: "slack",
-      icon: "💬",
-      name: "Slack",
+      key: "discord",
+      icon: "🎮",
+      name: "Discord",
       connected: false,
       detail: "Not connected yet — no notification system exists to send to it.",
       action: null,
