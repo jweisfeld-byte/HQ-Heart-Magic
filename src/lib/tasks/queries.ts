@@ -156,3 +156,22 @@ export async function setTaskStatus(
     return { error: err instanceof Error ? err.message : "Unknown error." };
   }
 }
+
+export async function getTasksDueToday(): Promise<Task[] | null> {
+  try {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("task")
+      .select("*")
+      .eq("due_date", todayStr)
+      .order("created_at", { ascending: true });
+
+    if (error) return null;
+    return data as Task[];
+  } catch {
+    return null;
+  }
+}

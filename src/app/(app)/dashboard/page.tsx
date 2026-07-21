@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
   getLowInventoryVariants,
@@ -7,6 +8,11 @@ import {
   getSalesLast30Days,
 } from "@/lib/shopify/queries";
 import { getQuoteOfTheDay } from "@/lib/quotes";
+import {
+  getTasksDueToday,
+  STATUS_LABELS,
+  STATUS_STYLES,
+} from "@/lib/tasks/queries";
 
 type BriefingLine = {
   label: string;
@@ -77,13 +83,15 @@ export default async function DashboardPage() {
     rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
   const quote = getQuoteOfTheDay();
 
-  const [lowInventory, recentOrders, conversion, todaySales, salesLast30Days] = await Promise.all([
-    getLowInventoryVariants(),
-    getRecentOrders(8),
-    getConversionRateLastWeek(),
-    getTodaySalesByChannel(),
-    getSalesLast30Days(),
-  ]);
+  const [lowInventory, recentOrders, conversion, todaySales, salesLast30Days, tasksDueToday] =
+    await Promise.all([
+      getLowInventoryVariants(),
+      getRecentOrders(8),
+      getConversionRateLastWeek(),
+      getTodaySalesByChannel(),
+      getSalesLast30Days(),
+      getTasksDueToday(),
+    ]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -239,6 +247,53 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-8 flex flex-col gap-3">
+        {/* Today's tasks — preview of the Tasks board, due today */}
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-foreground">Today&apos;s tasks</span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                tasksDueToday
+                  ? "bg-green-100 text-green-700"
+                  : "bg-accent-soft/30 text-accent"
+              }`}
+            >
+              {tasksDueToday ? "Live" : "Not connected yet"}
+            </span>
+          </div>
+          {tasksDueToday ? (
+            tasksDueToday.length > 0 ? (
+              <ul className="mt-2 flex flex-col gap-2">
+                {tasksDueToday.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between gap-3">
+                    <Link
+                      href={`/tasks/${t.id}`}
+                      className="truncate text-sm text-foreground hover:text-accent"
+                    >
+                      {t.title}
+                    </Link>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[t.status]}`}
+                    >
+                      {STATUS_LABELS[t.status]}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-sm text-muted">
+                Nothing due today.
+              </p>
+            )
+          ) : (
+            <p className="mt-1 text-sm text-muted">
+              Waiting on{" "}
+              <code className="text-xs">supabase/tasks_schema.sql</code> to be
+              run.
+            </p>
+          )}
+        </div>
+
         {/* Inventory alerts — live from Shopify once connected */}
         <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center justify-between">
