@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { SignOutButton } from "@/components/SignOutButton";
+import { getOrganizationSettings } from "@/lib/settings/queries";
 
 export default async function AppLayout({
   children,
@@ -17,8 +18,14 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // Rainbow border glow is on by default until Jacob turns it off in
+  // Settings > Appearance — defaults to true if settings aren't set up
+  // yet, matching the effect's original always-on behavior.
+  const org = await getOrganizationSettings();
+  const glowEnabled = org ? org.rainbow_glow_enabled : true;
+
   return (
-    <div className="flex h-screen w-full">
+    <div className={`flex h-screen w-full ${glowEnabled ? "glow-enabled" : ""}`}>
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-y-auto">
         <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border bg-surface px-6 py-3">

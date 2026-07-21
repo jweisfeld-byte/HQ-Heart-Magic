@@ -96,7 +96,7 @@ h1, h2, h3, .font-display {
   isolation: isolate;
 }
 
-.border-border::before {
+.glow-enabled .border-border::before {
   content: "";
   position: absolute;
   inset: -2px;

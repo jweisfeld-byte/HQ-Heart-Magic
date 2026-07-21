@@ -12,6 +12,8 @@ export type OrganizationSettings = {
   name: string;
   default_currency: string;
   timezone: string;
+  rainbow_glow_enabled: boolean;
+  dashboard_background_url: string | null;
   updated_at: string;
 };
 
@@ -48,6 +50,102 @@ export async function updateOrganizationSettings(input: {
         updated_at: new Date().toISOString(),
       })
       .eq("id", input.id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+// Dashboard Appearance (Settings > Appearance) — Jacob's ask: a toggle
+// for the rainbow border-glow effect, and a way to swap the dashboard's
+// background photo without touching code.
+export async function updateDashboardAppearance(input: {
+  id: string;
+  rainbowGlowEnabled: boolean;
+}): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("organization_settings")
+      .update({
+        rainbow_glow_enabled: input.rainbowGlowEnabled,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", input.id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+const MAX_BACKGROUND_BYTES = 8 * 1024 * 1024; // 8MB
+
+// Uploads to the public `dashboard-backgrounds` Storage bucket (see
+// supabase/dashboard_appearance_schema.sql) and saves the resulting
+// public URL onto the organization_settings row.
+export async function uploadDashboardBackground(input: {
+  id: string;
+  file: File;
+}): Promise<{ ok: true; url: string } | { error: string }> {
+  const { id, file } = input;
+
+  if (!file || file.size === 0) {
+    return { error: "Choose an image file first." };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { error: "That file isn't an image." };
+  }
+  if (file.size > MAX_BACKGROUND_BYTES) {
+    return { error: "Image is too large (8MB max)." };
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `background-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("dashboard-backgrounds")
+      .upload(path, file, { contentType: file.type, upsert: true });
+
+    if (uploadError) return { error: uploadError.message };
+
+    const { data: publicUrlData } = supabase.storage
+      .from("dashboard-backgrounds")
+      .getPublicUrl(path);
+
+    const { error: updateError } = await supabase
+      .from("organization_settings")
+      .update({
+        dashboard_background_url: publicUrlData.publicUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (updateError) return { error: updateError.message };
+
+    return { ok: true, url: publicUrlData.publicUrl };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function resetDashboardBackground(
+  id: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("organization_settings")
+      .update({
+        dashboard_background_url: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
 
     if (error) return { error: error.message };
     return { ok: true };

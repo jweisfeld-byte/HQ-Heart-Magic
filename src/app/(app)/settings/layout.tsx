@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/settings/profile", label: "Profile" },
   { href: "/settings/organization", label: "Organization" },
+  { href: "/settings/appearance", label: "Appearance" },
   { href: "/settings/integrations", label: "Integrations" },
   { href: "/settings/roles", label: "Roles & Permissions" },
 ];

@@ -9,6 +9,7 @@ import {
 import { getQuoteOfTheDay } from "@/lib/quotes";
 import { getTasks, getTasksDueToday } from "@/lib/tasks/queries";
 import { TasksPreviewCard } from "@/components/dashboard/TasksPreviewCard";
+import { getOrganizationSettings } from "@/lib/settings/queries";
 
 type BriefingLine = {
   label: string;
@@ -87,6 +88,7 @@ export default async function DashboardPage() {
     salesLast30Days,
     tasksDueToday,
     allTasks,
+    org,
   ] = await Promise.all([
     getLowInventoryVariants(),
     getRecentOrders(8),
@@ -95,7 +97,12 @@ export default async function DashboardPage() {
     getSalesLast30Days(),
     getTasksDueToday(),
     getTasks(),
+    getOrganizationSettings(),
   ]);
+
+  // Jacob's own upload (Settings > Appearance) wins over the default
+  // mountain photo once he's set one.
+  const backgroundUrl = org?.dashboard_background_url || "/dashboard-mountain.jpg";
 
   return (
     // Full-bleed background photo behind the whole dashboard (Jacob's
@@ -106,8 +113,7 @@ export default async function DashboardPage() {
     <div
       className="-mx-8 -mt-8 min-h-screen bg-cover bg-center px-8 pt-8 pb-16"
       style={{
-        backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url('/dashboard-mountain.jpg')",
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url('${backgroundUrl}')`,
       }}
     >
       <div className="mx-auto max-w-3xl">
