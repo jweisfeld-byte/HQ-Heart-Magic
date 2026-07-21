@@ -154,6 +154,7 @@ export async function EntryDetailFormPage({
             initial={references.map((r) => ({
               label: r.label,
               url: r.url ?? "",
+              driveFileId: r.drive_file_id ?? undefined,
             }))}
           />
 
@@ -296,6 +297,7 @@ export async function EntryDetailFormPage({
                   rel="noreferrer"
                   className="text-sm text-accent hover:underline"
                 >
+                  {r.target_type === "drive_file" ? "📄 " : "🔗 "}
                   {r.label} ↗
                 </a>
               </li>

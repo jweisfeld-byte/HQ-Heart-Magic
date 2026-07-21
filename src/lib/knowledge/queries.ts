@@ -166,12 +166,16 @@ export async function getReferencesForEntry(
 
 export async function setReferencesForEntry(
   entryId: string,
-  refs: { label: string; url: string }[],
+  refs: { label: string; url: string; driveFileId?: string }[],
 ): Promise<void> {
   const supabase = createAdminClient();
 
   const cleaned = refs
-    .map((r) => ({ label: r.label.trim(), url: r.url.trim() }))
+    .map((r) => ({
+      label: r.label.trim(),
+      url: r.url.trim(),
+      driveFileId: r.driveFileId?.trim() || null,
+    }))
     .filter((r) => r.label && r.url);
 
   await supabase.from("reference").delete().eq("entry_id", entryId);
@@ -183,7 +187,11 @@ export async function setReferencesForEntry(
       entry_id: entryId,
       label: r.label,
       url: r.url,
-      target_type: "drive_file",
+      // Distinguishes a Drive Picker selection (Technical Architecture v1
+      // Section 6) from a manually pasted URL — same table, different
+      // provenance.
+      target_type: r.driveFileId ? "drive_file" : "url",
+      drive_file_id: r.driveFileId,
     })),
   );
 }
