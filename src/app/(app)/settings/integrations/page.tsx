@@ -46,9 +46,9 @@ export default async function IntegrationsSettingsPage() {
       key: "drive",
       icon: "📁",
       name: "Google Drive",
-      connected: false,
+      connected: true,
       detail:
-        "Not wired up as a connection yet — Drive links are pasted in manually as Linked documents on entries today.",
+        "Connected via the Drive Picker (Google OAuth) — attach a real Drive file to any entry's Linked documents without pasting a URL.",
       action: null,
     },
     {
