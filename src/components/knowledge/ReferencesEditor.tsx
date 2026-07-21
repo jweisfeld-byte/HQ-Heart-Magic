@@ -10,17 +10,6 @@ export type ReferenceRow = { label: string; url: string; driveFileId?: string };
  * rather than `any` scattered through the file.
  */
 type GoogleTokenClient = { requestAccessToken: () => void };
-type GoogleIdentity = {
-  accounts: {
-    oauth2: {
-      initTokenClient: (config: {
-        client_id: string;
-        scope: string;
-        callback: (resp: { access_token?: string; error?: string }) => void;
-      }) => GoogleTokenClient;
-    };
-  };
-};
 type PickerDoc = { id: string; name: string; url: string };
 type PickerData = {
   action: string;
@@ -33,16 +22,31 @@ type PickerBuilderInstance = {
   setCallback: (cb: (data: PickerData) => void) => PickerBuilderInstance;
   build: () => { setVisible: (visible: boolean) => void };
 };
-type GapiPicker = {
-  picker: {
-    PickerBuilder: new () => PickerBuilderInstance;
-    ViewId: { DOCS: unknown };
-    Action: { PICKED: string };
+// The Picker classes (PickerBuilder, ViewId, Action) are NOT exposed on
+// `gapi.picker` — despite being loaded via `gapi.load("picker", ...)`,
+// Google attaches them to the separate `google.picker` global instead.
+// (Mixing these up is what produced "PickerBuilder is not a
+// constructor" — `gapi.picker` exists but isn't the right namespace.)
+type GooglePickerNamespace = {
+  PickerBuilder: new () => PickerBuilderInstance;
+  ViewId: { DOCS: unknown };
+  Action: { PICKED: string };
+};
+type GoogleIdentity = {
+  accounts: {
+    oauth2: {
+      initTokenClient: (config: {
+        client_id: string;
+        scope: string;
+        callback: (resp: { access_token?: string; error?: string }) => void;
+      }) => GoogleTokenClient;
+    };
   };
+  picker?: GooglePickerNamespace;
 };
 type Gapi = {
   load: (api: string, callback: () => void) => void;
-} & { picker?: GapiPicker["picker"] };
+};
 
 declare global {
   interface Window {
@@ -119,8 +123,8 @@ function ensureGoogleLoaded(): Promise<void> {
         "gapi.load('picker')",
       );
       console.log(
-        `${LOG_PREFIX} ready. window.gapi.picker =`,
-        !!window.gapi?.picker,
+        `${LOG_PREFIX} ready. window.google.picker =`,
+        !!window.google?.picker,
       );
     })();
   }
@@ -132,9 +136,9 @@ function buildAndShowPicker(
   apiKey: string,
   onResult: (doc: PickerDoc | null, error?: string) => void,
 ) {
-  const picker = window.gapi?.picker;
+  const picker = window.google?.picker;
   if (!picker) {
-    onResult(null, "Google Picker module never finished loading (window.gapi.picker missing).");
+    onResult(null, "Google Picker module never finished loading (window.google.picker missing).");
     return;
   }
   try {
@@ -159,7 +163,7 @@ function buildAndShowPicker(
     console.error(`${LOG_PREFIX} PickerBuilder threw:`, err);
     onResult(
       null,
-      `Google Picker failed to open: ${err instanceof Error ? err.message : String(err)}. This usually means the "Google Picker API" itself hasn't been enabled in Google Cloud Console (separate from the OAuth client and API key) — check APIs & Services → Enabled APIs.`,
+      `Google Picker failed to open: ${err instanceof Error ? err.message : String(err)}.`,
     );
   }
 }
