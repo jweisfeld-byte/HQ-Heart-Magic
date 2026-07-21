@@ -4,7 +4,7 @@ import {
   getRecentOrders,
   getConversionRateLastWeek,
   getTodaySalesByChannel,
-  getTotalSalesThisMonth,
+  getSalesLast30Days,
 } from "@/lib/shopify/queries";
 import { getQuoteOfTheDay } from "@/lib/quotes";
 
@@ -77,12 +77,12 @@ export default async function DashboardPage() {
     rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
   const quote = getQuoteOfTheDay();
 
-  const [lowInventory, recentOrders, conversion, todaySales, monthSales] = await Promise.all([
+  const [lowInventory, recentOrders, conversion, todaySales, salesLast30Days] = await Promise.all([
     getLowInventoryVariants(),
     getRecentOrders(8),
     getConversionRateLastWeek(),
     getTodaySalesByChannel(),
-    getTotalSalesThisMonth(),
+    getSalesLast30Days(),
   ]);
 
   return (
@@ -208,26 +208,26 @@ export default async function DashboardPage() {
           <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
-                Sales this month
+                Sales (30d)
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                  monthSales
+                  salesLast30Days
                     ? "bg-green-100 text-green-700"
                     : "bg-accent-soft/30 text-accent"
                 }`}
               >
-                {monthSales ? "Live" : "N/A"}
+                {salesLast30Days ? "Live" : "N/A"}
               </span>
             </div>
-            {monthSales ? (
+            {salesLast30Days ? (
               <>
                 <p className="mt-2 font-display text-2xl font-semibold text-green-500">
-                  {formatMoney(monthSales.totalRevenue, monthSales.currency)}
+                  {formatMoney(salesLast30Days.totalRevenue, salesLast30Days.currency)}
                 </p>
                 <p className="mt-1 text-xs text-muted">
-                  {monthSales.orderCount} order{monthSales.orderCount === 1 ? "" : "s"}{" "}
-                  · month to date
+                  {salesLast30Days.orderCount} order{salesLast30Days.orderCount === 1 ? "" : "s"}{" "}
+                  · trailing 30 days
                 </p>
               </>
             ) : (
