@@ -5,6 +5,7 @@ import {
   getRecentOrders,
   getConversionRateLastWeek,
 } from "@/lib/shopify/queries";
+import { getQuoteOfTheDay } from "@/lib/quotes";
 
 type BriefingLine = {
   label: string;
@@ -71,6 +72,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   const firstName = user?.email?.split("@")[0] ?? "there";
+  const quote = getQuoteOfTheDay();
 
   const [revenue, lowInventory, recentOrders, conversion] = await Promise.all([
     getYesterdayRevenue(),
@@ -86,10 +88,8 @@ export default async function DashboardPage() {
           <h1 className="font-display text-2xl font-semibold text-foreground">
             Good morning, {firstName}.
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            This is the Today View shell — the real briefing lines up here once
-            each data source is wired in. Nothing below is invented; each line
-            says plainly what it&apos;s waiting on.
+          <p className="mt-1 text-sm italic text-muted">
+            &ldquo;{quote.text}&rdquo; <span className="not-italic">— {quote.author}</span>
           </p>
         </div>
 
