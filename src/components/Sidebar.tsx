@@ -34,10 +34,10 @@ type NavItem = {
 export function Sidebar() {
   const pathname = usePathname();
 
-  // Every pill gets a plain static outline. The active/current-page
-  // pill swaps that for the app-wide rotating-rainbow-ring effect (the
+  // Every pill stays the same size — the active/current-page pill is
+  // signified only by the app-wide rotating-rainbow-ring effect (the
   // `.border-border` hook every card/tile uses, gated by the Settings >
-  // Appearance toggle) instead of a solid background fill.
+  // Appearance toggle), never by growing.
   function renderItem(item: NavItem) {
     const active =
       pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -45,10 +45,10 @@ export function Sidebar() {
       <li key={item.href}>
         <Link
           href={item.href}
-          className={`flex origin-left items-center gap-2.5 rounded-full border px-3 py-2 text-[16.8px] font-medium transition-all duration-200 ease-out ${
+          className={`flex items-center gap-2.5 rounded-full border px-3 py-2 text-[16.8px] font-medium transition-colors duration-200 ease-out ${
             active
-              ? "scale-105 border-border text-accent"
-              : "scale-100 border-[color:var(--color-border)] text-foreground/80 hover:bg-accent/25"
+              ? "border-border text-accent"
+              : "border-[color:var(--color-border)] text-foreground/80 hover:border-accent hover:bg-accent/40 hover:text-accent"
           }`}
         >
           {item.iconSrc ? (
