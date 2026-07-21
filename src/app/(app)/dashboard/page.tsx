@@ -107,7 +107,7 @@ export default async function DashboardPage() {
       className="-mx-8 -mt-8 min-h-screen bg-cover bg-center px-8 pt-8 pb-16"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/dashboard-mountain.jpg')",
+          "linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url('/dashboard-mountain.jpg')",
       }}
     >
       <div className="mx-auto max-w-3xl">
