@@ -1,6 +1,6 @@
 import { EntryDetailFormPage } from "@/components/knowledge/EntryDetailFormPage";
 
-export default async function KnowledgeEntryDetailPage({
+export default async function MarketingEntryDetailPage({
   params,
   searchParams,
 }: {
@@ -14,7 +14,7 @@ export default async function KnowledgeEntryDetailPage({
     <EntryDetailFormPage
       libraryKey={libraryKey}
       id={id}
-      basePath="/knowledge"
+      basePath="/marketing"
       edit={Boolean(edit)}
     />
   );
