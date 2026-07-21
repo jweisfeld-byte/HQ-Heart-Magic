@@ -68,13 +68,16 @@ function loadScriptOnce(src: string): Promise<void> {
 }
 
 async function openDrivePicker(): Promise<PickerDoc | null> {
-  // Drive Picker credentials (env-inlined at build time)
-const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY;
 
   if (!clientId || !apiKey) {
+    const missing = [
+      !clientId && "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+      !apiKey && "NEXT_PUBLIC_GOOGLE_PICKER_API_KEY",
+    ].filter(Boolean);
     throw new Error(
-      "Google Drive isn't connected yet — NEXT_PUBLIC_GOOGLE_CLIENT_ID / NEXT_PUBLIC_GOOGLE_PICKER_API_KEY aren't set.",
+      `Google Drive isn't connected yet — missing: ${missing.join(", ")}.`,
     );
   }
 
