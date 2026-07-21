@@ -214,3 +214,83 @@ export async function getConversionRateLastWeek(): Promise<ConversionRateLastWee
     conversionRate: Number(row.conversion_rate),
   };
 }
+
+export type ChannelSales = {
+  orderCount: number;
+  totalRevenue: number;
+  currency: string;
+};
+
+export type TodaySalesByChannel = {
+  shopify: ChannelSales; // every channel except TikTok (Online Store, POS, etc.)
+  tiktok: ChannelSales;
+};
+
+function todayRangeUTC() {
+  const now = new Date();
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  return { start: start.toISOString(), end: now.toISOString() };
+}
+
+/**
+ * Splits today's orders by sales channel so the dashboard can show
+ * "Shopify" (the main store) and "TikTok" as separate tiles, even though
+ * both land in the same Orders list — Shopify tags each order with
+ * channelInformation.displayName ("Online Store", "TikTok", etc.).
+ */
+export async function getTodaySalesByChannel(): Promise<TodaySalesByChannel | null> {
+  const { start, end } = todayRangeUTC();
+
+  const query = `
+    query TodayOrdersByChannel($queryString: String!) {
+      orders(first: 250, query: $queryString) {
+        nodes {
+          channelInformation {
+            displayName
+          }
+          currentTotalPriceSet {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const data = await shopifyAdminGraphQL<{
+    orders: {
+      nodes: {
+        channelInformation: { displayName: string | null } | null;
+        currentTotalPriceSet: {
+          shopMoney: { amount: string; currencyCode: string };
+        };
+      }[];
+    };
+  }>(query, {
+    queryString: `created_at:>='${start}' AND created_at:<='${end}'`,
+  });
+
+  if (!data) return null;
+
+  const nodes = data.orders.nodes;
+  const isTikTok = (n: (typeof nodes)[number]) =>
+    n.channelInformation?.displayName === "TikTok";
+
+  function summarize(list: typeof nodes): ChannelSales {
+    const totalRevenue = list.reduce(
+      (sum, o) => sum + parseFloat(o.currentTotalPriceSet.shopMoney.amount),
+      0,
+    );
+    const currency = list[0]?.currentTotalPriceSet.shopMoney.currencyCode ?? "USD";
+    return { orderCount: list.length, totalRevenue, currency };
+  }
+
+  return {
+    shopify: summarize(nodes.filter((n) => !isTikTok(n))),
+    tiktok: summarize(nodes.filter(isTikTok)),
+  };
+}

@@ -4,6 +4,7 @@ import {
   getLowInventoryVariants,
   getRecentOrders,
   getConversionRateLastWeek,
+  getTodaySalesByChannel,
 } from "@/lib/shopify/queries";
 import { getQuoteOfTheDay } from "@/lib/quotes";
 
@@ -74,11 +75,12 @@ export default async function DashboardPage() {
   const firstName = user?.email?.split("@")[0] ?? "there";
   const quote = getQuoteOfTheDay();
 
-  const [revenue, lowInventory, recentOrders, conversion] = await Promise.all([
+  const [revenue, lowInventory, recentOrders, conversion, todaySales] = await Promise.all([
     getYesterdayRevenue(),
     getLowInventoryVariants(),
     getRecentOrders(8),
     getConversionRateLastWeek(),
+    getTodaySalesByChannel(),
   ]);
 
   return (
@@ -93,39 +95,113 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Conversion rate, last 7 days — little square tile per Jacob's ask */}
-        <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-foreground">
-              Conversion rate
-            </span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                conversion
-                  ? "bg-green-100 text-green-700"
-                  : "bg-accent-soft/30 text-accent"
-              }`}
-            >
-              {conversion ? "Live" : "N/A"}
-            </span>
+        {/* Little square tiles per Jacob's ask: conversion rate + today's
+            sales, split by channel (Shopify's own store vs. TikTok — both
+            land in the same Orders list, split via channelInformation). */}
+        <div className="flex flex-wrap justify-end gap-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-foreground">
+                Conversion rate
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  conversion
+                    ? "bg-green-100 text-green-700"
+                    : "bg-accent-soft/30 text-accent"
+                }`}
+              >
+                {conversion ? "Live" : "N/A"}
+              </span>
+            </div>
+            {conversion ? (
+              <>
+                <p className="mt-2 font-display text-2xl font-semibold text-foreground">
+                  {formatPercent(conversion.conversionRate)}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {conversion.completedCheckouts} of {conversion.sessions} sessions
+                  · last 7 days
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                Needs the <code className="text-[10px]">read_reports</code> scope.
+                Re-run <code className="text-[10px]">/api/shopify/install</code>{" "}
+                to reconnect.
+              </p>
+            )}
           </div>
-          {conversion ? (
-            <>
-              <p className="mt-2 font-display text-2xl font-semibold text-foreground">
-                {formatPercent(conversion.conversionRate)}
-              </p>
-              <p className="mt-1 text-xs text-muted">
-                {conversion.completedCheckouts} of {conversion.sessions} sessions
-                · last 7 days
-              </p>
-            </>
-          ) : (
-            <p className="mt-2 text-xs text-muted">
-              Needs the <code className="text-[10px]">read_reports</code> scope.
-              Re-run <code className="text-[10px]">/api/shopify/install</code>{" "}
-              to reconnect.
+
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-foreground">
+                Sales today
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  todaySales
+                    ? "bg-green-100 text-green-700"
+                    : "bg-accent-soft/30 text-accent"
+                }`}
+              >
+                {todaySales ? "Live" : "N/A"}
+              </span>
+            </div>
+            <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted">
+              Shopify
             </p>
-          )}
+            {todaySales ? (
+              <>
+                <p className="mt-1 font-display text-2xl font-semibold text-foreground">
+                  {formatMoney(todaySales.shopify.totalRevenue, todaySales.shopify.currency)}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {todaySales.shopify.orderCount} order
+                  {todaySales.shopify.orderCount === 1 ? "" : "s"}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                Waiting on the Shopify connection.
+              </p>
+            )}
+          </div>
+
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-foreground">
+                Sales today
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  todaySales
+                    ? "bg-green-100 text-green-700"
+                    : "bg-accent-soft/30 text-accent"
+                }`}
+              >
+                {todaySales ? "Live" : "N/A"}
+              </span>
+            </div>
+            <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted">
+              TikTok
+            </p>
+            {todaySales ? (
+              <>
+                <p className="mt-1 font-display text-2xl font-semibold text-foreground">
+                  {formatMoney(todaySales.tiktok.totalRevenue, todaySales.tiktok.currency)}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {todaySales.tiktok.orderCount} order
+                  {todaySales.tiktok.orderCount === 1 ? "" : "s"}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                Waiting on the Shopify connection.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
