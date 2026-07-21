@@ -8,6 +8,7 @@ import {
 } from "@/lib/tasks/queries";
 import { updateTaskAction } from "@/app/(app)/tasks/actions";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
+import { getProjects, getProjectById } from "@/lib/projects/queries";
 
 function formatDate(iso: string | null) {
   if (!iso) return null;
@@ -37,7 +38,10 @@ export default async function TaskDetailPage({
   if (!task) notFound();
 
   if (edit) {
-    const users = await listWorkspaceUsers();
+    const [users, projects] = await Promise.all([
+      listWorkspaceUsers(),
+      getProjects(),
+    ]);
 
     return (
       <div className="mx-auto max-w-2xl">
@@ -122,6 +126,24 @@ export default async function TaskDetailPage({
 
           <div>
             <label className="text-sm font-medium text-foreground">
+              Project
+            </label>
+            <select
+              name="projectId"
+              defaultValue={task.project_id ?? ""}
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+            >
+              <option value="">No project</option>
+              {(projects ?? []).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground">
               Description
             </label>
             <textarea
@@ -153,6 +175,7 @@ export default async function TaskDetailPage({
 
   const overdue = isOverdue(task.due_date, task.status);
   const dueDate = formatDate(task.due_date);
+  const project = task.project_id ? await getProjectById(task.project_id) : null;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -175,6 +198,14 @@ export default async function TaskDetailPage({
               <span className="text-sm text-muted">
                 {task.assignee_email}
               </span>
+            )}
+            {project && (
+              <Link
+                href={`/projects/${project.id}`}
+                className="text-sm text-muted hover:text-accent"
+              >
+                {project.name}
+              </Link>
             )}
           </div>
         </div>

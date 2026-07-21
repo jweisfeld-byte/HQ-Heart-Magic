@@ -16,8 +16,8 @@ const NAV_ITEMS = [
   { href: "/experiments", label: "Experiments", icon: "🧪", iconSrc: "/icons/lightning.svg" },
   { href: "/wholesale", label: "Wholesale", icon: "📦" },
   { href: "/tasks", label: "Tasks", icon: "✅" },
+  { href: "/projects", label: "Projects", icon: "🔺" },
   { href: "/events", label: "Events", icon: "📅" },
-  { href: "/search", label: "AI Search", icon: "🔍" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 

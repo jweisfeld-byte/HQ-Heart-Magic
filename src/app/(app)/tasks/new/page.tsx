@@ -2,9 +2,18 @@ import Link from "next/link";
 import { createTaskAction } from "@/app/(app)/tasks/actions";
 import { STATUSES, STATUS_LABELS } from "@/lib/tasks/queries";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
+import { getProjects } from "@/lib/projects/queries";
 
-export default async function NewTaskPage() {
-  const users = await listWorkspaceUsers();
+export default async function NewTaskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project: preselectedProject } = await searchParams;
+  const [users, projects] = await Promise.all([
+    listWorkspaceUsers(),
+    getProjects(),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -82,6 +91,24 @@ export default async function NewTaskPage() {
               className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
             />
           )}
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">
+            Project
+          </label>
+          <select
+            name="projectId"
+            defaultValue={preselectedProject ?? ""}
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+          >
+            <option value="">No project</option>
+            {(projects ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

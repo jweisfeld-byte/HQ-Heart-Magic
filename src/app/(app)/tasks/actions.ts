@@ -34,6 +34,7 @@ export async function createTaskAction(formData: FormData) {
     status,
     assigneeEmail: String(formData.get("assigneeEmail") ?? "").trim() || null,
     dueDate: String(formData.get("dueDate") ?? "").trim() || null,
+    projectId: String(formData.get("projectId") ?? "").trim() || null,
     createdBy: user?.email ?? null,
   });
 
@@ -42,6 +43,7 @@ export async function createTaskAction(formData: FormData) {
   }
 
   revalidatePath("/tasks");
+  revalidatePath("/projects");
   redirect(`/tasks/${result.id}`);
 }
 
@@ -60,6 +62,7 @@ export async function updateTaskAction(formData: FormData) {
     status,
     assigneeEmail: String(formData.get("assigneeEmail") ?? "").trim() || null,
     dueDate: String(formData.get("dueDate") ?? "").trim() || null,
+    projectId: String(formData.get("projectId") ?? "").trim() || null,
   });
 
   if ("error" in result) {
@@ -68,6 +71,7 @@ export async function updateTaskAction(formData: FormData) {
 
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
+  revalidatePath("/projects");
   redirect(`/tasks/${id}`);
 }
 
@@ -86,4 +90,5 @@ export async function changeTaskStatusAction(formData: FormData) {
 
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
+  revalidatePath("/projects");
 }

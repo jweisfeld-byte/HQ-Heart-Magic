@@ -40,6 +40,7 @@ export type Task = {
   status: TaskStatus;
   assignee_email: string | null;
   due_date: string | null;
+  project_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -82,6 +83,7 @@ export async function createTask(input: {
   status: TaskStatus;
   assigneeEmail: string | null;
   dueDate: string | null;
+  projectId: string | null;
   createdBy: string | null;
 }): Promise<{ id: string } | { error: string }> {
   try {
@@ -94,6 +96,7 @@ export async function createTask(input: {
         status: input.status,
         assignee_email: input.assigneeEmail,
         due_date: input.dueDate,
+        project_id: input.projectId,
         created_by: input.createdBy,
       })
       .select("id")
@@ -116,6 +119,7 @@ export async function updateTask(
     status: TaskStatus;
     assigneeEmail: string | null;
     dueDate: string | null;
+    projectId: string | null;
   },
 ): Promise<{ ok: true } | { error: string }> {
   try {
@@ -128,6 +132,7 @@ export async function updateTask(
         status: input.status,
         assignee_email: input.assigneeEmail,
         due_date: input.dueDate,
+        project_id: input.projectId,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -154,6 +159,24 @@ export async function setTaskStatus(
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function getTasksForProject(
+  projectId: string,
+): Promise<Task[] | null> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("task")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+
+    if (error) return null;
+    return data as Task[];
+  } catch {
+    return null;
   }
 }
 
