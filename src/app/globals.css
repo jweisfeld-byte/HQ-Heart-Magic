@@ -72,3 +72,11 @@ h1, h2, h3, .font-display {
 .font-serif-brand {
   font-family: var(--font-alice), serif;
 }
+
+/* Global "little red glow" on every bordered card/box, per Jacob's ask —
+   originally added just to the dashboard tiles, now applied app-wide by
+   targeting the shared .border-border utility class rather than editing
+   every component individually. */
+.border-border {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}

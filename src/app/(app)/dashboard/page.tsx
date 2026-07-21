@@ -101,7 +101,7 @@ export default async function DashboardPage() {
           land in the same Orders list, split via channelInformation).
           Own row, side by side, so they never wrap under the header text. */}
       <div className="mt-4 flex flex-nowrap gap-3">
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Conversion rate
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Sales today
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Sales today
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Sales (30d)
@@ -240,7 +240,7 @@ export default async function DashboardPage() {
 
       <div className="mt-8 flex flex-col gap-3">
         {/* Inventory alerts — live from Shopify once connected */}
-        <div className="rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center justify-between">
             <span className="font-medium text-foreground">Inventory alerts</span>
             <span
@@ -281,7 +281,7 @@ export default async function DashboardPage() {
         {STUB_BRIEFING_LINES.map((line) => (
           <div
             key={line.label}
-            className="rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-4"
+            className="rounded-xl border border-border bg-surface p-4"
           >
             <div className="flex items-center justify-between">
               <span className="font-medium text-foreground">
@@ -302,7 +302,7 @@ export default async function DashboardPage() {
         </h2>
         {recentOrders ? (
           recentOrders.length > 0 ? (
-            <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)]">
+            <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted">
