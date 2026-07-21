@@ -1,19 +1,20 @@
 import Link from "next/link";
-import {
-  getTasks,
-  STATUSES,
-  STATUS_LABELS,
-  type Task,
-} from "@/lib/tasks/queries";
+import { getTasks, type Task } from "@/lib/tasks/queries";
 import { changeTaskStatusAction } from "@/app/(app)/tasks/actions";
 import { StatusSelect } from "@/components/tasks/StatusSelect";
 
-const GROUP_BAR_STYLES: Record<string, string> = {
-  not_started: "border-gray-400",
-  working_on_it: "border-orange-400",
-  stuck: "border-red-400",
-  done: "border-green-400",
-};
+// Cycled per group in order — same "colorful group header" look as
+// Monday's board grouping (Nov. Campaign in blue, Oct. Campaign in
+// purple, etc.), just applied to month groups instead of hand-named
+// campaign groups.
+const GROUP_ACCENTS = [
+  { border: "border-blue-400", text: "text-blue-600" },
+  { border: "border-purple-400", text: "text-purple-600" },
+  { border: "border-teal-400", text: "text-teal-600" },
+  { border: "border-orange-400", text: "text-orange-600" },
+  { border: "border-pink-400", text: "text-pink-600" },
+];
+const UNSCHEDULED_ACCENT = { border: "border-gray-300", text: "text-muted" };
 
 function isOverdue(iso: string | null, status: string) {
   if (!iso || status === "done") return false;
@@ -27,15 +28,28 @@ function formatDate(iso: string) {
   });
 }
 
+function monthKey(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function assigneeLabel(email: string | null) {
   if (!email) return "Unassigned";
   return email.split("@")[0];
 }
 
-// Monday.com-style board: grouped by status, each group a colored
-// section, each row a task with an inline status pill instead of
-// drag-and-drop between groups — same "fast dropdown, not delightful"
-// discipline used for Wholesale's pipeline stages.
+// Monday.com-style board: grouped by month (due date), each group a
+// colored section — same "fast dropdown, not delightful" discipline as
+// the rest of the app, just laid out like a Monday campaign tracker
+// instead of grouped by status.
 export default async function TasksPage() {
   const tasks = await getTasks();
 
@@ -51,9 +65,22 @@ export default async function TasksPage() {
     );
   }
 
-  const byStatus: Record<string, Task[]> = {};
-  for (const s of STATUSES) byStatus[s] = [];
-  for (const t of tasks) (byStatus[t.status] ??= []).push(t);
+  const groups = new Map<string, Task[]>();
+  for (const t of tasks) {
+    const key = t.due_date ? monthKey(t.due_date) : "unscheduled";
+    const arr = groups.get(key);
+    if (arr) arr.push(t);
+    else groups.set(key, [t]);
+  }
+
+  // Chronological (soonest month first); unscheduled tasks last.
+  const orderedKeys = [...groups.keys()].sort((a, b) => {
+    if (a === "unscheduled") return 1;
+    if (b === "unscheduled") return -1;
+    return a.localeCompare(b);
+  });
+
+  let colorIndex = 0;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -90,17 +117,21 @@ export default async function TasksPage() {
         </div>
       ) : (
         <div className="mt-6 flex flex-col gap-6">
-          {STATUSES.map((status) => {
-            const group = byStatus[status];
-            if (group.length === 0) return null;
+          {orderedKeys.map((key) => {
+            const group = groups.get(key)!;
+            const accent =
+              key === "unscheduled"
+                ? UNSCHEDULED_ACCENT
+                : GROUP_ACCENTS[colorIndex++ % GROUP_ACCENTS.length];
+            const label =
+              key === "unscheduled" ? "No due date" : monthLabel(key);
 
             return (
-              <div
-                key={status}
-                className={`border-l-4 pl-4 ${GROUP_BAR_STYLES[status]}`}
-              >
-                <p className="text-xs font-medium uppercase tracking-wide text-muted">
-                  {STATUS_LABELS[status]} · {group.length}
+              <div key={key} className={`border-l-4 pl-4 ${accent.border}`}>
+                <p
+                  className={`text-xs font-semibold uppercase tracking-wide ${accent.text}`}
+                >
+                  {label} · {group.length}
                 </p>
                 <div className="mt-2 overflow-hidden rounded-xl border border-border bg-surface">
                   <table className="w-full text-sm">
