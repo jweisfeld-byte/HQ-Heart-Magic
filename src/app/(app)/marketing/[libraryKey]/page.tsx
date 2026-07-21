@@ -1,6 +1,6 @@
 import { LibraryListPage } from "@/components/knowledge/LibraryListPage";
 
-export default async function KnowledgeLibraryPage({
+export default async function MarketingLibraryPage({
   params,
   searchParams,
 }: {
@@ -13,8 +13,8 @@ export default async function KnowledgeLibraryPage({
   return (
     <LibraryListPage
       libraryKey={libraryKey}
-      basePath="/knowledge"
-      hubLabel="Knowledge"
+      basePath="/marketing"
+      hubLabel="Marketing"
       activeTypeKey={type}
     />
   );
