@@ -4,6 +4,7 @@ import {
   uploadDashboardBackgroundAction,
   resetDashboardBackgroundAction,
 } from "@/app/(app)/settings/actions";
+import { ThemeToggle } from "@/components/settings/ThemeToggle";
 
 // Template F, same shape as the other Settings screens. Jacob's ask:
 // a way to turn the rainbow border-glow effect off without asking me,
@@ -24,6 +25,19 @@ export default async function AppearanceSettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="rounded-xl border border-border bg-surface p-5">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">
+          Appearance
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          System follows your device&apos;s light/dark setting. Choose Light
+          or Dark to override it just in this browser.
+        </p>
+        <div className="mt-3">
+          <ThemeToggle />
+        </div>
+      </div>
+
       <form
         action={updateRainbowGlowAction}
         className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5"

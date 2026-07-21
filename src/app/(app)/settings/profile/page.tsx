@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { ThemeToggle } from "@/components/settings/ThemeToggle";
 
 // Template F. Account info is managed by Google (Sign-in v1, Section
 // 1) — nothing here is editable except the local display preference,
@@ -50,18 +49,6 @@ export default async function ProfileSettingsPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">
-          Appearance
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          System follows your device&apos;s light/dark setting. Choose Light
-          or Dark to override it just in this browser.
-        </p>
-        <div className="mt-3">
-          <ThemeToggle />
-        </div>
-      </div>
     </div>
   );
 }
