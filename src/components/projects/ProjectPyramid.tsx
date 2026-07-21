@@ -2,6 +2,39 @@ import type { Task } from "@/lib/tasks/queries";
 
 type PyramidTask = Pick<Task, "id" | "title" | "status" | "project_percent">;
 
+type Point = readonly [number, number];
+
+function normalize([x, y]: Point): Point {
+  const len = Math.hypot(x, y) || 1;
+  return [x / len, y / len];
+}
+
+// Rounds every corner of a closed polygon by a fixed radius — used to
+// round the pyramid's three outer corners (apex tip, base-left,
+// base-right) via a single clip-path rather than reworking each
+// slice's own straight-edged geometry.
+function roundedPolygonPath(points: Point[], radius: number): string {
+  const n = points.length;
+  const commands: string[] = [];
+
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i - 1 + n) % n];
+    const curr = points[i];
+    const next = points[(i + 1) % n];
+
+    const inDir = normalize([curr[0] - prev[0], curr[1] - prev[1]]);
+    const outDir = normalize([next[0] - curr[0], next[1] - curr[1]]);
+
+    const p1: Point = [curr[0] - inDir[0] * radius, curr[1] - inDir[1] * radius];
+    const p2: Point = [curr[0] + outDir[0] * radius, curr[1] + outDir[1] * radius];
+
+    commands.push(i === 0 ? `M ${p1[0]} ${p1[1]}` : `L ${p1[0]} ${p1[1]}`);
+    commands.push(`Q ${curr[0]} ${curr[1]} ${p2[0]} ${p2[1]}`);
+  }
+  commands.push("Z");
+  return commands.join(" ");
+}
+
 // One horizontal slice per task (Jacob's ask), ordered bottom-to-top by
 // the order tasks were added — earliest/foundational task forms the
 // wide base, the most recently added task is the tip. Each slice's
@@ -91,12 +124,25 @@ export function ProjectPyramid({ tasks }: { tasks: PyramidTask[] }) {
     return { task, path, midY, rightEdge, pctLabel, done: task.status === "done" };
   });
 
+  // Unique per distinct set of tasks so multiple pyramids on one page
+  // (the Projects hub shows one per project) don't share a clip-path id.
+  const clipId = `pyramid-clip-${tasks.map((t) => t.id).join("-") || "empty"}`;
+  const cornerRadius = 10;
+  const clipPath = roundedPolygonPath(
+    [
+      [apexX, apexY],
+      [apexX + baseHalfWidth, baseY],
+      [apexX - baseHalfWidth, baseY],
+    ],
+    cornerRadius,
+  );
+
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       className="h-auto w-full max-w-md text-foreground"
       role="img"
-      aria-label={`Pyramid of ${n} task${n === 1 ? "" : "s"}`}
+      aria-label={`Progress pyramid of ${n} task${n === 1 ? "" : "s"}`}
     >
       <defs>
         <linearGradient id="pyramidRainbow" x1="0" y1="0" x2="1" y2="0">
@@ -108,20 +154,31 @@ export function ProjectPyramid({ tasks }: { tasks: PyramidTask[] }) {
           <stop offset="84%" stopColor="#8b5cf6" />
           <stop offset="100%" stopColor="#ec4899" />
         </linearGradient>
+        <clipPath id={clipId}>
+          <path d={clipPath} />
+        </clipPath>
       </defs>
 
-      {slices.map(({ task, path, midY, rightEdge, pctLabel, done }) => (
-        <g key={task.id}>
+      <g clipPath={`url(#${clipId})`}>
+        {slices.map(({ task, path, done }) => (
           <path
+            key={task.id}
             d={path}
             fill={done ? "url(#pyramidRainbow)" : "#000000"}
             stroke="#57534e"
             strokeWidth={1.5}
-          >
-            <title>
-              {task.title} — {pctLabel} of project{done ? " (done)" : ""}
-            </title>
-          </path>
+          />
+        ))}
+      </g>
+      {/* Rounded outer outline drawn on top since the clip above hides
+          the fill/stroke of slices right at the rounded corners. */}
+      <path d={clipPath} fill="none" stroke="#57534e" strokeWidth={1.5} />
+
+      {slices.map(({ task, midY, rightEdge, pctLabel, done }) => (
+        <g key={task.id}>
+          <title>
+            {task.title} — {pctLabel} of project{done ? " (done)" : ""}
+          </title>
           <line
             x1={rightEdge + 2}
             y1={midY}

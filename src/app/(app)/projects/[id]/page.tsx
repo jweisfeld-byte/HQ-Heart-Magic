@@ -153,7 +153,7 @@ export default async function ProjectDetailPage({
       <div className="mt-6 rounded-xl border border-border bg-surface p-5">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wide text-muted">
-            Pyramid
+            Progress
           </p>
           <p className="text-xs text-muted">
             {tasks.reduce((sum, t) => sum + (t.project_percent ?? 0), 0)}% assigned
