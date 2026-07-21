@@ -10,6 +10,9 @@ import { getQuoteOfTheDay } from "@/lib/quotes";
 import { getTasks, getTasksDueToday } from "@/lib/tasks/queries";
 import { TasksPreviewCard } from "@/components/dashboard/TasksPreviewCard";
 import { getOrganizationSettings, listWorkspaceUsers } from "@/lib/settings/queries";
+import { getProjects } from "@/lib/projects/queries";
+import { nameFromEmail } from "@/lib/format";
+import { getPersonRecommendation, type PersonConfig } from "@/lib/recommendations/service";
 
 type BriefingLine = {
   label: string;
@@ -17,13 +20,25 @@ type BriefingLine = {
   detail: string;
 };
 
-const REVENUE_FOCUS_PEOPLE = ["Jacob", "Marco", "Chris"] as const;
-
-const REVENUE_FOCUS_LINES: BriefingLine[] = REVENUE_FOCUS_PEOPLE.map((name) => ({
-  label: `What's the one thing ${name} can do today to drive the most revenue?`,
-  status: "pending",
-  detail: "Waiting on a revenue-driver recommendation engine — no AI analysis pipeline exists yet (Backlog B7).",
-}));
+// Real focus areas (Jacob's own description) — passed to the AI as
+// role context so the recommendation is actually tailored per person,
+// not generic advice.
+const REVENUE_FOCUS_PEOPLE: PersonConfig[] = [
+  {
+    name: "Jacob",
+    focusArea:
+      "Handles wholesale clients, creates ad creative, and optimizes the website and advertorials.",
+  },
+  {
+    name: "Marco",
+    focusArea: "Focused on organic content and TikTok creator management.",
+  },
+  {
+    name: "Chris",
+    focusArea:
+      "Focused on funnel management, loading ads into TikTok and Meta, and testing creative.",
+  },
+];
 
 const STUB_BRIEFING_LINES: BriefingLine[] = [
   {
@@ -98,6 +113,7 @@ export default async function DashboardPage() {
     allTasks,
     org,
     users,
+    allProjects,
   ] = await Promise.all([
     getLowInventoryVariants(),
     getRecentOrders(8),
@@ -108,11 +124,47 @@ export default async function DashboardPage() {
     getTasks(),
     getOrganizationSettings(),
     listWorkspaceUsers(),
+    getProjects(),
   ]);
 
   // Jacob's own upload (Settings > Appearance) wins over the default
   // mountain photo once he's set one.
   const backgroundUrl = org?.dashboard_background_url || "/dashboard-mountain.jpg";
+
+  // Today's revenue-focus recommendation per person (Jacob's ask) — one
+  // Claude call per person, cached per day (see getPersonRecommendation),
+  // grounded in their own open tasks/projects plus today's live numbers.
+  const businessSnapshot = {
+    conversionRateText: conversion
+      ? `${formatPercent(conversion.conversionRate)} (${conversion.completedCheckouts} of ${conversion.sessions} sessions, last 7 days)`
+      : "not connected",
+    todaySalesText: todaySales
+      ? `Shopify ${formatMoney(todaySales.shopify.totalRevenue, todaySales.shopify.currency)} (${todaySales.shopify.orderCount} orders), TikTok ${formatMoney(todaySales.tiktok.totalRevenue, todaySales.tiktok.currency)} (${todaySales.tiktok.orderCount} orders)`
+      : "not connected",
+    salesLast30DaysText: salesLast30Days
+      ? `${formatMoney(salesLast30Days.totalRevenue, salesLast30Days.currency)} across ${salesLast30Days.orderCount} orders`
+      : "not connected",
+    lowInventoryText:
+      lowInventory && lowInventory.length > 0
+        ? `${lowInventory.length} variant${lowInventory.length === 1 ? "" : "s"} running low`
+        : lowInventory
+          ? "nothing low on stock"
+          : "not connected",
+  };
+
+  const recommendations = await Promise.all(
+    REVENUE_FOCUS_PEOPLE.map((person) => {
+      const email =
+        users?.find((u) => nameFromEmail(u.email) === person.name)?.email ?? null;
+      return getPersonRecommendation(
+        person,
+        email,
+        allTasks ?? [],
+        allProjects ?? [],
+        businessSnapshot,
+      );
+    }),
+  );
 
   return (
     // Full-bleed background photo behind the whole dashboard (Jacob's
@@ -285,20 +337,34 @@ export default async function DashboardPage() {
         {/* Per-person "one thing to drive revenue today" (Jacob's ask) —
             same stub-card treatment as the rest of the not-yet-built
             briefing lines below, just placed right under Today's tasks. */}
-        {REVENUE_FOCUS_LINES.map((line) => (
-          <div
-            key={line.label}
-            className="rounded-xl border border-border bg-surface p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-medium text-foreground">{line.label}</span>
-              <span className="shrink-0 rounded-full bg-accent-soft/30 px-2.5 py-0.5 text-xs font-medium text-accent">
-                Not connected yet
-              </span>
+        {REVENUE_FOCUS_PEOPLE.map((person, i) => {
+          const recommendation = recommendations[i];
+          return (
+            <div
+              key={person.name}
+              className="rounded-xl border border-border bg-surface p-4"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium text-foreground">
+                  What&apos;s the one thing {person.name} can do today to drive the most revenue?
+                </span>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    recommendation
+                      ? "bg-green-100 text-green-700"
+                      : "bg-accent-soft/30 text-accent"
+                  }`}
+                >
+                  {recommendation ? "Live" : "Not connected yet"}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-muted">
+                {recommendation ??
+                  "Waiting on an ANTHROPIC_API_KEY in Vercel to power this — see Settings."}
+              </p>
             </div>
-            <p className="mt-1 text-sm text-muted">{line.detail}</p>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Inventory alerts — live from Shopify once connected */}
         <div className="rounded-xl border border-border bg-surface p-4">
