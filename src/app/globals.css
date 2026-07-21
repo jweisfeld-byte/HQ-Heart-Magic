@@ -106,8 +106,8 @@ h1, h2, h3, .font-display {
     from var(--spin-angle),
     transparent 0deg,
     transparent 270deg,
-    rgba(239, 68, 68, 0.9) 320deg,
-    rgba(239, 68, 68, 1) 340deg,
+    rgba(239, 68, 68, 0.5) 320deg,
+    rgba(239, 68, 68, 0.65) 340deg,
     transparent 360deg
   );
   -webkit-mask:
@@ -115,7 +115,7 @@ h1, h2, h3, .font-display {
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: spin-border 4s linear infinite;
+  animation: spin-border 8s linear infinite;
   pointer-events: none;
   z-index: -1;
 }
