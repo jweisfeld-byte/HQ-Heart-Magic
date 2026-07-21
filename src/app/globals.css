@@ -73,12 +73,12 @@ h1, h2, h3, .font-display {
   font-family: var(--font-alice), serif;
 }
 
-/* Global "little red glow" on every bordered card/box, per Jacob's ask.
-   Went through two iterations: a static glow, then a pulse — this is the
-   third, a comet of red light that slowly travels around each box's
-   perimeter rather than pulsing in place. Implemented as a rotating
-   conic-gradient ring on a pseudo-element, masked down to just the
-   border's width so only the ring (not the box interior) is affected. */
+/* Global glow on every bordered card/box, per Jacob's ask. Went through
+   several iterations: static red glow, a red pulse, a rotating red
+   comet, now a slow rainbow ring that travels around each box's
+   perimeter. Implemented as a rotating conic-gradient ring on a
+   pseudo-element, masked down to just the border's width so only the
+   ring (not the box interior) is affected. */
 @property --spin-angle {
   syntax: "<angle>";
   inherits: false;
@@ -104,18 +104,21 @@ h1, h2, h3, .font-display {
   padding: 2px;
   background: conic-gradient(
     from var(--spin-angle),
-    transparent 0deg,
-    transparent 270deg,
-    rgba(239, 68, 68, 0.5) 320deg,
-    rgba(239, 68, 68, 0.65) 340deg,
-    transparent 360deg
+    rgba(255, 0, 0, 0.3),
+    rgba(255, 165, 0, 0.3),
+    rgba(255, 230, 0, 0.3),
+    rgba(0, 180, 60, 0.3),
+    rgba(0, 140, 255, 0.3),
+    rgba(120, 60, 230, 0.3),
+    rgba(230, 0, 200, 0.3),
+    rgba(255, 0, 0, 0.3)
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: spin-border 8s linear infinite;
+  animation: spin-border 14s linear infinite;
   pointer-events: none;
   z-index: -1;
 }

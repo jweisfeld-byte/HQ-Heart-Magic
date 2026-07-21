@@ -98,7 +98,19 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    // Full-bleed background photo behind the whole dashboard (Jacob's
+    // ask) — negative margins cancel out <main>'s own padding so the
+    // image reaches the edges, then the same padding is re-applied
+    // inside. Dark scrim layered over the photo keeps existing text
+    // readable regardless of light/dark theme.
+    <div
+      className="-mx-8 -mt-8 min-h-screen bg-cover bg-center px-8 pt-8 pb-16"
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/dashboard-mountain.jpg')",
+      }}
+    >
+      <div className="mx-auto max-w-3xl">
       <div>
         <h1 className="font-display text-2xl font-semibold text-foreground">
           Good morning, {firstName}.
@@ -355,6 +367,7 @@ export default async function DashboardPage() {
             connect the store.
           </p>
         )}
+      </div>
       </div>
     </div>
   );
