@@ -6,25 +6,26 @@ import { ReferencesEditor } from "@/components/knowledge/ReferencesEditor";
 
 // Shared "New entry" form. basePath decides which module this posts back
 // to (/knowledge, /marketing, ...) via a hidden field the shared server
-// action reads.
+// action reads. `flat` (Creators, Analytics, Experiments) means routes
+// are basePath/[id] rather than basePath/[libraryKey]/[id].
 export async function NewEntryFormPage({
   libraryKey,
   basePath,
+  flat = false,
 }: {
   libraryKey: string;
   basePath: string;
+  flat?: boolean;
 }) {
   const library = await getLibraryByKey(libraryKey);
   if (!library) notFound();
 
   const entryTypes = await getEntryTypesForLibrary(library.id);
+  const listHref = flat ? basePath : `${basePath}/${library.key}`;
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
-        href={`${basePath}/${library.key}`}
-        className="text-sm text-muted hover:text-accent"
-      >
+      <Link href={listHref} className="text-sm text-muted hover:text-accent">
         ← {library.name}
       </Link>
       <h1 className="mt-1 font-display text-2xl font-semibold text-foreground">
@@ -35,6 +36,7 @@ export async function NewEntryFormPage({
         <input type="hidden" name="basePath" value={basePath} />
         <input type="hidden" name="libraryId" value={library.id} />
         <input type="hidden" name="libraryKey" value={library.key} />
+        {flat && <input type="hidden" name="flat" value="1" />}
 
         <div>
           <label className="text-sm font-medium text-foreground">Title</label>
@@ -111,7 +113,7 @@ export async function NewEntryFormPage({
             Create entry
           </button>
           <Link
-            href={`${basePath}/${library.key}`}
+            href={listHref}
             className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/5"
           >
             Cancel
