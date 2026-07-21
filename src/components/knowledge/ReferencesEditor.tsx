@@ -68,7 +68,8 @@ function loadScriptOnce(src: string): Promise<void> {
 }
 
 async function openDrivePicker(): Promise<PickerDoc | null> {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  // Drive Picker credentials (env-inlined at build time)
+const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PICKER_API_KEY;
 
   if (!clientId || !apiKey) {
