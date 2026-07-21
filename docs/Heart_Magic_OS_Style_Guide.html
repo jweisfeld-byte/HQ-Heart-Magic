@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Magic OS — Design System Specimen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neutral-0:#FBF9F5; --neutral-50:#F5F1EA; --neutral-100:#EDE7DC; --neutral-200:#DDD4C4;
+    --neutral-400:#A69983; --neutral-600:#6B5F4E; --neutral-800:#3A2F24; --neutral-900:#241C14;
+    --clay-100:#F3E0D4; --clay-500:#B5562F; --clay-600:#9A4623;
+    --rose-500:#C77B7B; --sage-500:#7A8B6F; --amber-500:#C99A3E; --brick-500:#A8503F;
+
+    --bg-page:var(--neutral-0); --bg-surface:#FFFFFF; --bg-sidebar:var(--neutral-50);
+    --border-default:var(--neutral-100);
+    --text-primary:var(--neutral-800); --text-secondary:var(--neutral-600); --text-tertiary:var(--neutral-400);
+    --accent-default:var(--clay-500); --accent-hover:var(--clay-600); --accent-subtle:var(--clay-100);
+    --success:var(--sage-500); --warning:var(--amber-500); --danger:var(--brick-500);
+
+    --shadow-1: 0 1px 2px rgba(36,28,20,0.06), 0 1px 1px rgba(36,28,20,0.04);
+    --shadow-2: 0 4px 12px rgba(36,28,20,0.08);
+    --shadow-3: 0 12px 32px rgba(36,28,20,0.14);
+
+    --radius-sm:8px; --radius-md:12px;
+    --font-display:'Fraunces', serif; --font-ui:'Inter', sans-serif;
+  }
+
+  html[data-theme="dark"] {
+    --bg-page:#1C1611; --bg-surface:#26201A; --bg-sidebar:#171310;
+    --border-default:#3A2F24;
+    --text-primary:#F0E9DE; --text-secondary:#B5A891; --text-tertiary:#8A7C68;
+    --accent-hover:#C96A3F; --accent-subtle:#3D2A1F;
+    --success:#8FA383; --warning:#D6AC5C; --danger:#BC6152;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg-page); color: var(--text-primary);
+    font-family: var(--font-ui); font-size: 15px; line-height: 22px;
+    transition: background 180ms ease, color 180ms ease;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 64px 40px 120px; }
+
+  .topbar { position: sticky; top:0; z-index: 10; display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 40px; background: var(--bg-page); border-bottom: 1px solid var(--border-default); }
+  .topbar-title { font-family: var(--font-display); font-weight:500; font-size: 18px; }
+  .toggle-btn { display:flex; align-items:center; gap:8px; padding: 8px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default); background: var(--bg-surface); color: var(--text-primary);
+    font-family: var(--font-ui); font-size: 13px; cursor: pointer; transition: all 150ms ease; }
+  .toggle-btn:hover { border-color: var(--accent-default); color: var(--accent-default); }
+
+  section { margin-top: 80px; }
+  .section-label { font-family: var(--font-ui); font-size:12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-tertiary); margin-bottom: 12px; font-weight: 500; }
+  h1.hero { font-family: var(--font-display); font-weight:500; font-size:44px; line-height:1.15; margin: 0 0 12px; color: var(--text-primary); }
+  p.sub { color: var(--text-secondary); font-size:16px; max-width: 560px; margin:0; }
+
+  h2.section-title { font-family: var(--font-display); font-weight:500; font-size:28px; margin: 0 0 8px; }
+  p.section-desc { color: var(--text-secondary); margin: 0 0 28px; max-width: 640px; }
+
+  /* Type specimen */
+  .type-row { display:flex; align-items:baseline; gap:24px; padding: 16px 0; border-bottom:1px solid var(--border-default); }
+  .type-row:last-child{border-bottom:none;}
+  .type-meta { width: 190px; flex-shrink:0; color: var(--text-tertiary); font-size:12px; }
+  .t-display{font-family:var(--font-display);font-weight:500;font-size:36px;}
+  .t-h1{font-family:var(--font-display);font-weight:500;font-size:28px;}
+  .t-h2{font-family:var(--font-display);font-weight:500;font-size:22px;}
+  .t-h3{font-family:var(--font-ui);font-weight:600;font-size:17px;}
+  .t-body{font-family:var(--font-ui);font-weight:400;font-size:15px;}
+  .t-ui{font-family:var(--font-ui);font-weight:400;font-size:13px;}
+  .t-caption{font-family:var(--font-ui);font-weight:400;font-size:12px;color:var(--text-tertiary);}
+
+  /* Colors */
+  .swatch-grid { display:grid; grid-template-columns: repeat(6,1fr); gap:16px; }
+  .swatch { border-radius: var(--radius-md); overflow:hidden; border:1px solid var(--border-default); }
+  .swatch-fill { height:64px; }
+  .swatch-label { padding:10px 12px; background:var(--bg-surface); }
+  .swatch-name { font-size:12px; font-weight:500; }
+  .swatch-hex { font-size:11px; color:var(--text-tertiary); }
+
+  /* Buttons */
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .btn { font-family: var(--font-ui); font-weight:500; font-size:13px; border-radius: var(--radius-sm);
+    height:36px; padding: 0 16px; display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+    border: 1px solid transparent; transition: all 120ms ease-out; }
+  .btn-primary { background: var(--accent-default); color:#FBF9F5; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-default); }
+  .btn-secondary:hover { border-color: var(--accent-default); color: var(--accent-default); }
+  .btn-ghost { background: transparent; color: var(--text-secondary); }
+  .btn-ghost:hover { background: var(--bg-sidebar); color: var(--text-primary); }
+  .btn-danger { background: var(--danger); color: #FBF9F5; }
+  .btn-sm { height:28px; font-size:12px; padding:0 12px; }
+  .btn-lg { height:44px; font-size:14px; padding:0 20px; }
+  .btn-disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* Cards */
+  .card-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:20px; }
+  .card { background: var(--bg-surface); border:1px solid var(--border-default); border-radius: var(--radius-md);
+    padding:24px; transition: all 150ms ease-out; }
+  .card:hover { box-shadow: var(--shadow-1); border-color: var(--accent-subtle); }
+  .card-title { font-family: var(--font-ui); font-weight:600; font-size:15px; margin:0 0 6px; }
+  .card-desc { color: var(--text-secondary); font-size:13px; margin:0; }
+  .card-meta { display:flex; align-items:center; gap:8px; margin-top:16px; font-size:12px; color: var(--text-tertiary); }
+
+  /* status pill */
+  .pill { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; padding:4px 10px;
+    border-radius: 9999px; background: var(--bg-sidebar); color: var(--text-secondary); }
+  .dot { width:6px; height:6px; border-radius:50%; }
+  .dot-open{background:var(--accent-default);} .dot-success{background:var(--success);}
+  .dot-warn{background:var(--warning);} .dot-danger{background:var(--danger);}
+
+  /* Forms */
+  .form-demo { max-width:360px; }
+  .field { margin-bottom:20px; }
+  .field label { display:block; font-size:13px; font-weight:500; margin-bottom:6px; color: var(--text-primary); }
+  .field input { width:100%; height:40px; padding:0 12px; border-radius: var(--radius-sm); border:1px solid var(--border-default);
+    background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-ui); font-size:14px; outline:none;
+    transition: box-shadow 150ms ease, border-color 150ms ease; }
+  .field input:focus { border-color: var(--accent-default); box-shadow: 0 0 0 3px var(--accent-subtle); }
+  .field .helper { font-size:12px; color: var(--text-tertiary); margin-top:6px; }
+
+  /* Nav mock */
+  .nav-mock { display:flex; border:1px solid var(--border-default); border-radius: var(--radius-md); overflow:hidden; height:280px; }
+  .nav-side { width:220px; background: var(--bg-sidebar); padding:16px 12px; border-right:1px solid var(--border-default); }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius: var(--radius-sm); font-size:13px;
+    color: var(--text-secondary); margin-bottom:2px; cursor:pointer; }
+  .nav-item:hover { background: var(--border-default); }
+  .nav-item.active { background: var(--accent-subtle); color: var(--accent-default); font-weight:500; }
+  .nav-content { flex:1; background: var(--bg-page); padding:20px; }
+  .nav-icon { width:16px; height:16px; display:inline-flex; }
+
+  /* shadows */
+  .shadow-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:20px; }
+  .shadow-box { height:100px; border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-default);
+    display:flex; align-items:flex-end; padding:12px; font-size:12px; color: var(--text-tertiary); }
+
+  footer { margin-top:100px; padding-top:24px; border-top:1px solid var(--border-default); color: var(--text-tertiary); font-size:12px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title" style="font-family:var(--font-display);">Heart Magic OS</div>
+  <button class="toggle-btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark mode</button>
+</div>
+
+<div class="wrap">
+
+  <section style="margin-top:24px;">
+    <h1 class="hero">A calm, warm operating<br>system for Heart Magic.</h1>
+    <p class="sub">Structure borrowed from Apple, Stripe, and Linear. Warmth borrowed from cacao, ritual, and the brand itself. This page renders the design tokens directly — nothing here is a mockup of the palette, it is the palette.</p>
+  </section>
+
+  <section>
+    <div class="section-label">01 — Color System</div>
+    <h2 class="section-title">One accent. Warm neutrals. Nothing generic.</h2>
+    <p class="section-desc">No pure black, no pure white, no default SaaS blue anywhere in this palette.</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-fill" style="background:var(--neutral-0)"></div><div class="swatch-label"><div class="swatch-name">neutral-0</div><div class="swatch-hex">page bg</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--neutral-100)"></div><div class="swatch-label"><div class="swatch-name">neutral-100</div><div class="swatch-hex">borders</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--neutral-600)"></div><div class="swatch-label"><div class="swatch-name">neutral-600</div><div class="swatch-hex">secondary text</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--neutral-900)"></div><div class="swatch-label"><div class="swatch-name">neutral-900</div><div class="swatch-hex">headline ink</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--clay-500)"></div><div class="swatch-label"><div class="swatch-name">clay-500</div><div class="swatch-hex">accent</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--clay-100)"></div><div class="swatch-label"><div class="swatch-name">clay-100</div><div class="swatch-hex">accent subtle</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--rose-500)"></div><div class="swatch-label"><div class="swatch-name">rose-500</div><div class="swatch-hex">product line only</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--sage-500)"></div><div class="swatch-label"><div class="swatch-name">sage-500</div><div class="swatch-hex">success</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--amber-500)"></div><div class="swatch-label"><div class="swatch-name">amber-500</div><div class="swatch-hex">warning</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:var(--brick-500)"></div><div class="swatch-label"><div class="swatch-name">brick-500</div><div class="swatch-hex">danger</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">02 — Typography</div>
+    <h2 class="section-title">Fraunces for warmth. Inter for precision.</h2>
+    <p class="section-desc">Display and headings are allowed to sound like a person. Every interactive and dense surface stays quiet.</p>
+    <div class="type-row"><div class="type-meta">display / 36·44 · Fraunces 500</div><div class="t-display">Good morning, Jacob.</div></div>
+    <div class="type-row"><div class="type-meta">h1 / 28·36 · Fraunces 500</div><div class="t-h1">Customer Cases</div></div>
+    <div class="type-row"><div class="type-meta">h2 / 22·28 · Fraunces 500</div><div class="t-h2">Formulation Records</div></div>
+    <div class="type-row"><div class="type-meta">h3 / 17·24 · Inter 600</div><div class="t-h3">Eternal Bloom Rose — 20 Servings</div></div>
+    <div class="type-row"><div class="type-meta">body / 15·22 · Inter 400</div><div class="t-body">Every line in the Today view is a live link into the underlying object, not a static number.</div></div>
+    <div class="type-row"><div class="type-meta">ui / 13·18 · Inter 400</div><div class="t-ui">HM-ETB-12H · 281 in stock · Updated 2h ago</div></div>
+    <div class="type-row"><div class="type-meta">caption / 12·16 · Inter 400</div><div class="t-caption">⟳ Synced 2 minutes ago</div></div>
+  </section>
+
+  <section>
+    <div class="section-label">03 — Buttons</div>
+    <h2 class="section-title">Four variants. Sentence case. Never all-caps.</h2>
+    <div class="row" style="margin-bottom:16px;">
+      <button class="btn btn-primary">Create Task</button>
+      <button class="btn btn-secondary">Cancel</button>
+      <button class="btn btn-ghost">Dismiss</button>
+      <button class="btn btn-danger">Delete case</button>
+      <button class="btn btn-primary btn-disabled">Saving…</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-secondary btn-sm">Small · 28px</button>
+      <button class="btn btn-secondary">Medium · 36px</button>
+      <button class="btn btn-secondary btn-lg">Large · 44px</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">04 — Cards & Status</div>
+    <h2 class="section-title">Flat at rest. A whisper of elevation on hover.</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Launch: Eternal Bloom Rose</div>
+        <p class="card-desc">2 tasks remaining · T-minus 3 days</p>
+        <div class="card-meta"><span class="pill"><span class="dot dot-open"></span>In progress</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Order #1042 — Sarah K.</div>
+        <p class="card-desc">Address flagged for review</p>
+        <div class="card-meta"><span class="pill"><span class="dot dot-warn"></span>Needs attention</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Case: "arrived melted"</div>
+        <p class="card-desc">3rd similar report this week</p>
+        <div class="card-meta"><span class="pill"><span class="dot dot-danger"></span>Escalated</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">05 — Forms</div>
+    <h2 class="section-title">Labels above. Focus rings in accent. Never floating labels.</h2>
+    <div class="form-demo">
+      <div class="field">
+        <label>Task title</label>
+        <input type="text" placeholder="Photograph new packaging">
+      </div>
+      <div class="field">
+        <label>Due date</label>
+        <input type="text" placeholder="Jul 24, 2026">
+        <div class="helper">Click to focus — see the accent ring, not browser default blue.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">06 — Navigation</div>
+    <h2 class="section-title">Sidebar active-state uses accent as a fill — the only place it does at rest.</h2>
+    <div class="nav-mock">
+      <div class="nav-side">
+        <div class="nav-item active">🏠 Home</div>
+        <div class="nav-item">📥 Inbox</div>
+        <div class="nav-item">📚 Docs</div>
+        <div class="nav-item">✅ Projects</div>
+        <div class="nav-item">🛍 Commerce</div>
+        <div class="nav-item">🎧 Cases</div>
+      </div>
+      <div class="nav-content">
+        <div class="t-h2" style="margin-bottom:8px;">Today</div>
+        <div class="t-body" style="color:var(--text-secondary)">Overnight: 12 orders ($640), in line with trailing average.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">07 — Shadows & Elevation</div>
+    <h2 class="section-title">Warm-tinted, not generic gray. Used sparingly.</h2>
+    <div class="shadow-grid">
+      <div class="shadow-box" style="box-shadow:none;">shadow-0 · flat</div>
+      <div class="shadow-box" style="box-shadow:var(--shadow-1);">shadow-1 · hover</div>
+      <div class="shadow-box" style="box-shadow:var(--shadow-2);">shadow-2 · dropdown</div>
+      <div class="shadow-box" style="box-shadow:var(--shadow-3);">shadow-3 · panel/modal</div>
+    </div>
+  </section>
+
+  <footer>
+    Heart Magic OS Design System v1.0 — every value on this page is pulled directly from the token specification in the companion document.
+  </footer>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '🌙 Dark mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️ Light mode';
+    }
+  }
+</script>
+
+</body>
+</html>
