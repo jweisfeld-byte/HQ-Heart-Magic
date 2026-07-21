@@ -3,19 +3,25 @@ import { notFound } from "next/navigation";
 import { createEntryAction } from "@/lib/knowledge/actions";
 import { getEntryTypesForLibrary, getLibraryByKey } from "@/lib/knowledge/queries";
 import { ReferencesEditor } from "@/components/knowledge/ReferencesEditor";
+import type { FieldSchemaField } from "@/lib/knowledge/types";
 
 // Shared "New entry" form. basePath decides which module this posts back
 // to (/knowledge, /marketing, ...) via a hidden field the shared server
 // action reads. `flat` (Creators, Analytics, Experiments) means routes
-// are basePath/[id] rather than basePath/[libraryKey]/[id].
+// are basePath/[id] rather than basePath/[libraryKey]/[id]. `fieldSchema`
+// (e.g. Creator Profile's photo/handle/contact fields) renders extra,
+// engineer-defined inputs named field_<key> — collected generically by
+// the server action, no per-module code needed there.
 export async function NewEntryFormPage({
   libraryKey,
   basePath,
   flat = false,
+  fieldSchema = [],
 }: {
   libraryKey: string;
   basePath: string;
   flat?: boolean;
+  fieldSchema?: FieldSchemaField[];
 }) {
   const library = await getLibraryByKey(libraryKey);
   if (!library) notFound();
@@ -79,6 +85,26 @@ export async function NewEntryFormPage({
             <option value="archived">Archived</option>
           </select>
         </div>
+
+        {fieldSchema.length > 0 && (
+          <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              Profile details
+            </p>
+            {fieldSchema.map((f) => (
+              <div key={f.key}>
+                <label className="text-sm font-medium text-foreground">
+                  {f.label}
+                </label>
+                <input
+                  name={`field_${f.key}`}
+                  type={f.type}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         <div>
           <label className="text-sm font-medium text-foreground">

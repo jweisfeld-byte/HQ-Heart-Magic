@@ -8,6 +8,7 @@ import {
   getTagsForEntry,
 } from "@/lib/knowledge/queries";
 import { ReferencesEditor } from "@/components/knowledge/ReferencesEditor";
+import type { FieldSchemaField } from "@/lib/knowledge/types";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
@@ -19,24 +20,38 @@ function formatDateTime(iso: string) {
   });
 }
 
+function hrefForField(type: FieldSchemaField["type"], value: string) {
+  if (type === "email") return `mailto:${value}`;
+  if (type === "tel") return `tel:${value}`;
+  return value;
+}
+
 // Shared Module Detail View (Template B). Read mode by default; edit=true
 // shows the structured-field-free MVP edit form (title/status/body/tags).
 // Full block editor, version-history UI, and typed relationships are
 // intentionally out of scope for this first pass, across every module.
 // `flat` (Creators, Analytics, Experiments) means routes are
-// basePath/[id] rather than basePath/[libraryKey]/[id].
+// basePath/[id] rather than basePath/[libraryKey]/[id]. `fieldSchema` +
+// `photoFieldKey`/`subtitleFieldKey` turn the read view into a profile
+// header (photo, name, handle, contact rows) — used by Creator Profile.
 export async function EntryDetailFormPage({
   libraryKey,
   id,
   basePath,
   edit,
   flat = false,
+  fieldSchema = [],
+  photoFieldKey,
+  subtitleFieldKey,
 }: {
   libraryKey: string;
   id: string;
   basePath: string;
   edit: boolean;
   flat?: boolean;
+  fieldSchema?: FieldSchemaField[];
+  photoFieldKey?: string;
+  subtitleFieldKey?: string;
 }) {
   const library = await getLibraryByKey(libraryKey);
   if (!library) notFound();
@@ -102,6 +117,27 @@ export async function EntryDetailFormPage({
             </select>
           </div>
 
+          {fieldSchema.length > 0 && (
+            <div className="flex flex-col gap-4 rounded-xl border border-border bg-background p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                Profile details
+              </p>
+              {fieldSchema.map((f) => (
+                <div key={f.key}>
+                  <label className="text-sm font-medium text-foreground">
+                    {f.label}
+                  </label>
+                  <input
+                    name={`field_${f.key}`}
+                    type={f.type}
+                    defaultValue={entry.structured_fields[f.key] ?? ""}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
           <div>
             <label className="text-sm font-medium text-foreground">
               Content
@@ -151,6 +187,17 @@ export async function EntryDetailFormPage({
     );
   }
 
+  const photo = photoFieldKey ? entry.structured_fields[photoFieldKey] : undefined;
+  const subtitle = subtitleFieldKey
+    ? entry.structured_fields[subtitleFieldKey]
+    : undefined;
+  const contactFields = fieldSchema.filter(
+    (f) =>
+      f.key !== photoFieldKey &&
+      f.key !== subtitleFieldKey &&
+      entry.structured_fields[f.key],
+  );
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link href={listHref} className="text-sm text-muted hover:text-accent">
@@ -158,15 +205,31 @@ export async function EntryDetailFormPage({
       </Link>
 
       <div className="mt-1 flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-foreground">
-            {entry.title}
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            {entry.entry_type.name} · {entry.status} · updated{" "}
-            {formatDateTime(entry.updated_at)}
-            {entry.owner_email ? ` · ${entry.owner_email}` : ""}
-          </p>
+        <div className="flex items-start gap-4">
+          {fieldSchema.length > 0 &&
+            (photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photo}
+                alt={entry.title}
+                className="h-16 w-16 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft/30 text-xl font-semibold text-accent">
+                {entry.title.trim().charAt(0).toUpperCase() || "?"}
+              </div>
+            ))}
+          <div>
+            <h1 className="font-display text-2xl font-semibold text-foreground">
+              {entry.title}
+            </h1>
+            {subtitle && <p className="text-sm text-accent">{subtitle}</p>}
+            <p className="mt-1 text-sm text-muted">
+              {entry.entry_type.name} · {entry.status} · updated{" "}
+              {formatDateTime(entry.updated_at)}
+              {entry.owner_email ? ` · ${entry.owner_email}` : ""}
+            </p>
+          </div>
         </div>
         <Link
           href={`${detailHref}?edit=1`}
@@ -175,6 +238,36 @@ export async function EntryDetailFormPage({
           Edit
         </Link>
       </div>
+
+      {contactFields.length > 0 && (
+        <div className="mt-4 rounded-xl border border-border bg-surface p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">
+            Contact
+          </p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {contactFields.map((f) => {
+              const value = entry.structured_fields[f.key];
+              return (
+                <li key={f.key} className="text-sm">
+                  <span className="text-muted">{f.label}: </span>
+                  {f.type === "text" ? (
+                    <span className="text-foreground">{value}</span>
+                  ) : (
+                    <a
+                      href={hrefForField(f.type, value)}
+                      target={f.type === "url" ? "_blank" : undefined}
+                      rel={f.type === "url" ? "noreferrer" : undefined}
+                      className="text-accent hover:underline"
+                    >
+                      {value}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
