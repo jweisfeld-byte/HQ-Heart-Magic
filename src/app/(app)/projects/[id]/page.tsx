@@ -6,8 +6,8 @@ import { updateProjectAction } from "@/app/(app)/projects/actions";
 import { ProjectPyramid } from "@/components/projects/ProjectPyramid";
 import { ProjectTimeline } from "@/components/projects/ProjectTimeline";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
-import { STATUS_LABELS, STATUS_STYLES } from "@/lib/tasks/queries";
 import { nameFromEmail } from "@/lib/format";
+import { TaskBoard } from "@/components/tasks/TaskBoard";
 
 export default async function ProjectDetailPage({
   params,
@@ -164,46 +164,13 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-border bg-surface p-5">
+      <div className="mt-6">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">
           Tasks
         </p>
-        {tasks.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">No tasks in this project yet.</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {tasks.map((task) => (
-              <li
-                key={task.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
-              >
-                <Link
-                  href={`/tasks/${task.id}`}
-                  className="truncate text-sm font-medium text-foreground hover:text-accent"
-                >
-                  {task.title}
-                </Link>
-                <div className="flex shrink-0 items-center gap-2">
-                  {task.assignee_email && (
-                    <span className="text-xs text-muted">
-                      {nameFromEmail(task.assignee_email)}
-                    </span>
-                  )}
-                  {task.project_percent !== null && (
-                    <span className="text-xs font-medium text-muted">
-                      {task.project_percent}%
-                    </span>
-                  )}
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[task.status]}`}
-                  >
-                    {STATUS_LABELS[task.status]}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="mt-3">
+          <TaskBoard tasks={tasks} />
+        </div>
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-surface p-5">
