@@ -294,3 +294,79 @@ export async function getTodaySalesByChannel(): Promise<TodaySalesByChannel | nu
     tiktok: summarize(nodes.filter(isTikTok)),
   };
 }
+
+export type MonthToDateSales = {
+  orderCount: number;
+  totalRevenue: number;
+  currency: string;
+};
+
+function monthToDateRangeUTC() {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  return { start: start.toISOString(), end: now.toISOString() };
+}
+
+/**
+ * Total sales month-to-date across every channel. Paginates (unlike the
+ * other tiles here) since a full month can plausibly exceed 250 orders,
+ * capped at 10 pages (2,500 orders) as a sane upper bound.
+ */
+export async function getTotalSalesThisMonth(): Promise<MonthToDateSales | null> {
+  const { start, end } = monthToDateRangeUTC();
+  const queryString = `created_at:>='${start}' AND created_at:<='${end}'`;
+
+  const query = `
+    query MonthToDateOrders($queryString: String!, $after: String) {
+      orders(first: 250, query: $queryString, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          currentTotalPriceSet {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  let orderCount = 0;
+  let totalRevenue = 0;
+  let currency = "USD";
+  let after: string | undefined;
+  let pages = 0;
+  let sawAnyPage = false;
+
+  while (pages < 10) {
+    const data = await shopifyAdminGraphQL<{
+      orders: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: {
+          currentTotalPriceSet: {
+            shopMoney: { amount: string; currencyCode: string };
+          };
+        }[];
+      };
+    }>(query, { queryString, after });
+
+    if (!data) return sawAnyPage ? { orderCount, totalRevenue, currency } : null;
+    sawAnyPage = true;
+
+    for (const o of data.orders.nodes) {
+      totalRevenue += parseFloat(o.currentTotalPriceSet.shopMoney.amount);
+      currency = o.currentTotalPriceSet.shopMoney.currencyCode;
+    }
+    orderCount += data.orders.nodes.length;
+    pages += 1;
+
+    if (!data.orders.pageInfo.hasNextPage) break;
+    after = data.orders.pageInfo.endCursor ?? undefined;
+  }
+
+  return { orderCount, totalRevenue, currency };
+}

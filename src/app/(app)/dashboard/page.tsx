@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  getYesterdayRevenue,
   getLowInventoryVariants,
   getRecentOrders,
   getConversionRateLastWeek,
   getTodaySalesByChannel,
+  getTotalSalesThisMonth,
 } from "@/lib/shopify/queries";
 import { getQuoteOfTheDay } from "@/lib/quotes";
 
@@ -72,34 +72,36 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const firstName = user?.email?.split("@")[0] ?? "there";
+  const rawFirstName = user?.email?.split("@")[0] ?? "there";
+  const firstName =
+    rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
   const quote = getQuoteOfTheDay();
 
-  const [revenue, lowInventory, recentOrders, conversion, todaySales] = await Promise.all([
-    getYesterdayRevenue(),
+  const [lowInventory, recentOrders, conversion, todaySales, monthSales] = await Promise.all([
     getLowInventoryVariants(),
     getRecentOrders(8),
     getConversionRateLastWeek(),
     getTodaySalesByChannel(),
+    getTotalSalesThisMonth(),
   ]);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-foreground">
-            Good morning, {firstName}.
-          </h1>
-          <p className="mt-1 text-sm italic text-muted">
-            &ldquo;{quote.text}&rdquo; <span className="not-italic">— {quote.author}</span>
-          </p>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-semibold text-foreground">
+          Good morning, {firstName}.
+        </h1>
+        <p className="mt-1 text-sm italic text-muted">
+          &ldquo;{quote.text}&rdquo; <span className="not-italic">— {quote.author}</span>
+        </p>
+      </div>
 
-        {/* Little square tiles per Jacob's ask: conversion rate + today's
-            sales, split by channel (Shopify's own store vs. TikTok — both
-            land in the same Orders list, split via channelInformation). */}
-        <div className="flex flex-wrap justify-end gap-3">
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+      {/* Little square tiles per Jacob's ask: conversion rate + today's
+          sales, split by channel (Shopify's own store vs. TikTok — both
+          land in the same Orders list, split via channelInformation).
+          Own row, side by side, so they never wrap under the header text. */}
+      <div className="mt-4 flex flex-nowrap gap-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Conversion rate
@@ -116,7 +118,7 @@ export default async function DashboardPage() {
             </div>
             {conversion ? (
               <>
-                <p className="mt-2 font-display text-2xl font-semibold text-foreground">
+                <p className="mt-2 font-display text-2xl font-semibold text-green-500">
                   {formatPercent(conversion.conversionRate)}
                 </p>
                 <p className="mt-1 text-xs text-muted">
@@ -133,7 +135,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Sales today
@@ -153,7 +155,7 @@ export default async function DashboardPage() {
             </p>
             {todaySales ? (
               <>
-                <p className="mt-1 font-display text-2xl font-semibold text-foreground">
+                <p className="mt-1 font-display text-2xl font-semibold text-green-500">
                   {formatMoney(todaySales.shopify.totalRevenue, todaySales.shopify.currency)}
                 </p>
                 <p className="mt-1 text-xs text-muted">
@@ -168,7 +170,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">
                 Sales today
@@ -188,7 +190,7 @@ export default async function DashboardPage() {
             </p>
             {todaySales ? (
               <>
-                <p className="mt-1 font-display text-2xl font-semibold text-foreground">
+                <p className="mt-1 font-display text-2xl font-semibold text-green-500">
                   {formatMoney(todaySales.tiktok.totalRevenue, todaySales.tiktok.currency)}
                 </p>
                 <p className="mt-1 text-xs text-muted">
@@ -202,40 +204,43 @@ export default async function DashboardPage() {
               </p>
             )}
           </div>
+
+          <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-foreground">
+                Sales this month
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  monthSales
+                    ? "bg-green-100 text-green-700"
+                    : "bg-accent-soft/30 text-accent"
+                }`}
+              >
+                {monthSales ? "Live" : "N/A"}
+              </span>
+            </div>
+            {monthSales ? (
+              <>
+                <p className="mt-2 font-display text-2xl font-semibold text-green-500">
+                  {formatMoney(monthSales.totalRevenue, monthSales.currency)}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {monthSales.orderCount} order{monthSales.orderCount === 1 ? "" : "s"}{" "}
+                  · month to date
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                Waiting on the Shopify connection.
+              </p>
+            )}
         </div>
       </div>
 
       <div className="mt-8 flex flex-col gap-3">
-        {/* Revenue yesterday — live from Shopify once connected */}
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-foreground">Revenue yesterday</span>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                revenue
-                  ? "bg-green-100 text-green-700"
-                  : "bg-accent-soft/30 text-accent"
-              }`}
-            >
-              {revenue ? "Live" : "Not connected yet"}
-            </span>
-          </div>
-          {revenue ? (
-            <p className="mt-1 text-sm text-muted">
-              {formatMoney(revenue.totalRevenue, revenue.currency)} across{" "}
-              {revenue.orderCount} order{revenue.orderCount === 1 ? "" : "s"}.
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-muted">
-              Waiting on the Shopify connection. Visit{" "}
-              <code className="text-xs">/api/shopify/install</code> once to
-              connect the store.
-            </p>
-          )}
-        </div>
-
         {/* Inventory alerts — live from Shopify once connected */}
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-4">
           <div className="flex items-center justify-between">
             <span className="font-medium text-foreground">Inventory alerts</span>
             <span
@@ -276,7 +281,7 @@ export default async function DashboardPage() {
         {STUB_BRIEFING_LINES.map((line) => (
           <div
             key={line.label}
-            className="rounded-xl border border-border bg-surface p-4"
+            className="rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)] p-4"
           >
             <div className="flex items-center justify-between">
               <span className="font-medium text-foreground">
@@ -297,7 +302,7 @@ export default async function DashboardPage() {
         </h2>
         {recentOrders ? (
           recentOrders.length > 0 ? (
-            <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface shadow-[0_0_10px_rgba(239,68,68,0.35)]">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted">
