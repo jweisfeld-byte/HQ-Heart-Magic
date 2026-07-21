@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/creators", label: "Creators", icon: "🤝" },
   { href: "/analytics", label: "Analytics", icon: "📊" },
   { href: "/experiments", label: "Experiments", icon: "🧪" },
+  { href: "/wholesale", label: "Wholesale", icon: "📦" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
