@@ -118,10 +118,10 @@ export default async function DashboardPage() {
     >
       <div className="mx-auto max-w-3xl">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+        <h1 className="font-display text-2xl font-semibold text-black">
           Good morning, {firstName}.
         </h1>
-        <p className="mt-1 text-lg italic text-muted">
+        <p className="mt-1 text-lg italic text-black">
           &ldquo;{quote.text}&rdquo; <span className="not-italic">— {quote.author}</span>
         </p>
       </div>
