@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// iconSrc (a brand SVG from /public/icons) takes priority over the emoji
+// fallback when present — only sections with a natural match to one of
+// the hand-drawn HM brand icons get one; the rest keep their emoji.
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+  { href: "/dashboard", label: "Dashboard", icon: "🏠", iconSrc: "/icons/flower-of-life.svg" },
   { href: "/knowledge", label: "Knowledge", icon: "🧠" },
   { href: "/marketing", label: "Marketing", icon: "🎯" },
   { href: "/creative", label: "Creative", icon: "🎥" },
   { href: "/creators", label: "Creators", icon: "🤝" },
   { href: "/analytics", label: "Analytics", icon: "📊" },
-  { href: "/experiments", label: "Experiments", icon: "🧪" },
+  { href: "/experiments", label: "Experiments", icon: "🧪", iconSrc: "/icons/lightning.svg" },
   { href: "/wholesale", label: "Wholesale", icon: "📦" },
   { href: "/tasks", label: "Tasks", icon: "✅" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
@@ -40,7 +43,12 @@ export function Sidebar() {
                     : "text-foreground/80 hover:bg-accent/5"
                 }`}
               >
-                <span aria-hidden>{item.icon}</span>
+                {item.iconSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.iconSrc} alt="" className="h-4 w-4" />
+                ) : (
+                  <span aria-hidden>{item.icon}</span>
+                )}
                 {item.label}
               </Link>
             </li>

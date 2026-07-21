@@ -142,6 +142,12 @@ export async function LibraryListPage({
           </p>
         ) : entries.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/mushroom.svg"
+              alt=""
+              className="mx-auto mb-3 h-12 w-12 opacity-70"
+            />
             No entries yet.{" "}
             <Link href={newHref} className="text-accent hover:underline">
               Create the first one

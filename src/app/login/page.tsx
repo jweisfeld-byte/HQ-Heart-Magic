@@ -17,7 +17,13 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
-        <h1 className="font-display text-2xl font-semibold text-foreground">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/heart-in-cup.svg"
+          alt=""
+          className="mx-auto h-14 w-14"
+        />
+        <h1 className="mt-4 font-display text-2xl font-semibold text-foreground">
           Heart Magic HQ
         </h1>
         <p className="mt-2 text-sm text-muted">
