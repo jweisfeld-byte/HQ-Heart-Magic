@@ -74,9 +74,18 @@ h1, h2, h3, .font-display {
 }
 
 /* Global "little red glow" on every bordered card/box, per Jacob's ask —
-   originally added just to the dashboard tiles, now applied app-wide by
-   targeting the shared .border-border utility class rather than editing
-   every component individually. */
+   originally added just to the dashboard tiles, then made app-wide by
+   targeting the shared .border-border utility class, now given a gentle
+   pulse (also Jacob's ask) rather than sitting static. */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+  }
+}
+
 .border-border {
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+  animation: glow-pulse 3s ease-in-out infinite;
 }
