@@ -26,6 +26,10 @@ export async function GET() {
     "read_inventory",
     "read_locations",
     "read_customers",
+    // Needed for shopifyqlQuery (conversion rate / session data on the
+    // dashboard). If this scope was just added, re-run /api/shopify/install
+    // once so Shopify prompts for the extra permission.
+    "read_reports",
   ].join(",");
 
   const state = randomBytes(16).toString("hex");

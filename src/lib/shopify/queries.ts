@@ -166,3 +166,51 @@ export async function getRecentOrders(limit = 10): Promise<RecentOrder[] | null>
     fulfillmentStatus: o.displayFulfillmentStatus,
   }));
 }
+
+export type ConversionRateLastWeek = {
+  sessions: number;
+  completedCheckouts: number;
+  conversionRate: number; // fraction, e.g. 0.0041 == 0.41%
+};
+
+/**
+ * Uses Shopify's ShopifyQL Analytics API (shopifyqlQuery), a separate data
+ * surface from Orders/Products GraphQL — requires the read_reports scope.
+ * If the stored access token predates that scope, this returns null just
+ * like every other query here, so the dashboard tile falls back to "Not
+ * connected yet" instead of breaking. See /api/shopify/install for scopes.
+ */
+export async function getConversionRateLastWeek(): Promise<ConversionRateLastWeek | null> {
+  const query = `
+    query ConversionRateLastWeek {
+      shopifyqlQuery(query: "FROM sessions SHOW sessions, sessions_that_completed_checkout, conversion_rate SINCE -7d UNTIL today") {
+        parseErrors
+        tableData {
+          rows
+        }
+      }
+    }
+  `;
+
+  const data = await shopifyAdminGraphQL<{
+    shopifyqlQuery: {
+      parseErrors: string[];
+      tableData: {
+        rows: {
+          sessions: string;
+          sessions_that_completed_checkout: string;
+          conversion_rate: string;
+        }[];
+      } | null;
+    };
+  }>(query);
+
+  const row = data?.shopifyqlQuery?.tableData?.rows?.[0];
+  if (!row) return null;
+
+  return {
+    sessions: Number(row.sessions),
+    completedCheckouts: Number(row.sessions_that_completed_checkout),
+    conversionRate: Number(row.conversion_rate),
+  };
+}

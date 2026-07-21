@@ -3,6 +3,7 @@ import {
   getYesterdayRevenue,
   getLowInventoryVariants,
   getRecentOrders,
+  getConversionRateLastWeek,
 } from "@/lib/shopify/queries";
 
 type BriefingLine = {
@@ -55,6 +56,14 @@ function formatDate(iso: string) {
   });
 }
 
+function formatPercent(fraction: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(fraction);
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -63,22 +72,62 @@ export default async function DashboardPage() {
 
   const firstName = user?.email?.split("@")[0] ?? "there";
 
-  const [revenue, lowInventory, recentOrders] = await Promise.all([
+  const [revenue, lowInventory, recentOrders, conversion] = await Promise.all([
     getYesterdayRevenue(),
     getLowInventoryVariants(),
     getRecentOrders(8),
+    getConversionRateLastWeek(),
   ]);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-display text-2xl font-semibold text-foreground">
-        Good morning, {firstName}.
-      </h1>
-      <p className="mt-1 text-sm text-muted">
-        This is the Today View shell — the real briefing lines up here once
-        each data source is wired in. Nothing below is invented; each line
-        says plainly what it&apos;s waiting on.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-semibold text-foreground">
+            Good morning, {firstName}.
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            This is the Today View shell — the real briefing lines up here once
+            each data source is wired in. Nothing below is invented; each line
+            says plainly what it&apos;s waiting on.
+          </p>
+        </div>
+
+        {/* Conversion rate, last 7 days — little square tile per Jacob's ask */}
+        <div className="flex w-40 shrink-0 flex-col rounded-xl border border-border bg-surface p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-foreground">
+              Conversion rate
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                conversion
+                  ? "bg-green-100 text-green-700"
+                  : "bg-accent-soft/30 text-accent"
+              }`}
+            >
+              {conversion ? "Live" : "N/A"}
+            </span>
+          </div>
+          {conversion ? (
+            <>
+              <p className="mt-2 font-display text-2xl font-semibold text-foreground">
+                {formatPercent(conversion.conversionRate)}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {conversion.completedCheckouts} of {conversion.sessions} sessions
+                · last 7 days
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 text-xs text-muted">
+              Needs the <code className="text-[10px]">read_reports</code> scope.
+              Re-run <code className="text-[10px]">/api/shopify/install</code>{" "}
+              to reconnect.
+            </p>
+          )}
+        </div>
+      </div>
 
       <div className="mt-8 flex flex-col gap-3">
         {/* Revenue yesterday — live from Shopify once connected */}
