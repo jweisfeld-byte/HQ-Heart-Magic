@@ -43,6 +43,7 @@ export type FunnelStageAsset = {
   file_label: string | null;
   file_url: string | null;
   drive_file_id: string | null;
+  ad_copy: string;
   created_at: string;
   updated_at: string;
 };
@@ -471,6 +472,26 @@ export async function deleteStageAsset(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Could not remove format.",
+    };
+  }
+}
+
+export async function updateStageAssetCopy(
+  id: string,
+  adCopy: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("funnel_stage_asset")
+      .update({ ad_copy: adCopy, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not update ad copy.",
     };
   }
 }

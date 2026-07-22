@@ -16,6 +16,7 @@ import {
   renameStageAsset,
   setStageAssetFile,
   deleteStageAsset,
+  updateStageAssetCopy,
 } from "@/lib/funnels/queries";
 
 export async function createFunnelAction(formData: FormData) {
@@ -274,6 +275,22 @@ export async function deleteAssetAction(formData: FormData) {
   const result = await deleteStageAsset(id);
   if ("error" in result) {
     throw new Error(result.error);
+  }
+
+  revalidatePath(`/marketing/funnels/${funnelId}`);
+}
+
+export async function updateAssetCopyAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const funnelId = String(formData.get("funnelId") ?? "");
+  const adCopy = String(formData.get("adCopy") ?? "");
+  if (!id) {
+    return;
+  }
+
+  const result = await updateStageAssetCopy(id, adCopy);
+  if ("error" in result) {
+    return;
   }
 
   revalidatePath(`/marketing/funnels/${funnelId}`);

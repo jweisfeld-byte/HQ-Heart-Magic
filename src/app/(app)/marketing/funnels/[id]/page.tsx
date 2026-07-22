@@ -13,6 +13,7 @@ import {
   setAssetFileAction,
   removeAssetFileAction,
   deleteAssetAction,
+  updateAssetCopyAction,
 } from "@/app/(app)/marketing/funnels/actions";
 import type { FunnelTriangleStage } from "@/components/funnels/FunnelTriangle";
 import { ExpandableFunnelTriangle } from "@/components/funnels/ExpandableFunnelTriangle";
@@ -176,35 +177,50 @@ export default async function FunnelDetailPage({
                   {assets.map((asset) => (
                     <div
                       key={asset.id}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"
+                      className="flex flex-col gap-2 rounded-lg border border-border bg-background px-3 py-2"
                     >
-                      <form action={renameAssetAction} className="w-40 shrink-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <form action={renameAssetAction} className="w-40 shrink-0">
+                          <input type="hidden" name="id" value={asset.id} />
+                          <input type="hidden" name="funnelId" value={funnel.id} />
+                          <AutoSubmitField
+                            name="label"
+                            defaultValue={asset.label}
+                            className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
+                          />
+                        </form>
+                        <div className="flex-1">
+                          <FunnelStageDriveAttach
+                            stage={asset}
+                            funnelId={funnel.id}
+                            action={setAssetFileAction}
+                            removeAction={removeAssetFileAction}
+                          />
+                        </div>
+                        <form action={deleteAssetAction}>
+                          <input type="hidden" name="id" value={asset.id} />
+                          <input type="hidden" name="funnelId" value={funnel.id} />
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-border px-2 py-1 text-xs text-muted hover:bg-accent/5 hover:text-red-600"
+                            aria-label="Remove format"
+                          >
+                            ×
+                          </button>
+                        </form>
+                      </div>
+
+                      <form action={updateAssetCopyAction} className="pl-1">
                         <input type="hidden" name="id" value={asset.id} />
                         <input type="hidden" name="funnelId" value={funnel.id} />
                         <AutoSubmitField
-                          name="label"
-                          defaultValue={asset.label}
-                          className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
+                          name="adCopy"
+                          defaultValue={asset.ad_copy}
+                          multiline
+                          rows={2}
+                          placeholder="Ad copy for this format — headline, body, CTA…"
+                          className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-xs text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
                         />
-                      </form>
-                      <div className="flex-1">
-                        <FunnelStageDriveAttach
-                          stage={asset}
-                          funnelId={funnel.id}
-                          action={setAssetFileAction}
-                          removeAction={removeAssetFileAction}
-                        />
-                      </div>
-                      <form action={deleteAssetAction}>
-                        <input type="hidden" name="id" value={asset.id} />
-                        <input type="hidden" name="funnelId" value={funnel.id} />
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-border px-2 py-1 text-xs text-muted hover:bg-accent/5 hover:text-red-600"
-                          aria-label="Remove format"
-                        >
-                          ×
-                        </button>
                       </form>
                     </div>
                   ))}
