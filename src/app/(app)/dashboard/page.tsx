@@ -366,45 +366,6 @@ export default async function DashboardPage() {
           );
         })}
 
-        {/* Inventory alerts — live from Shopify once connected */}
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-foreground">Inventory alerts</span>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                lowInventory
-                  ? "bg-green-100 text-green-700"
-                  : "bg-accent-soft/30 text-accent"
-              }`}
-            >
-              {lowInventory ? "Live" : "Not connected yet"}
-            </span>
-          </div>
-          {lowInventory ? (
-            lowInventory.length > 0 ? (
-              <ul className="mt-2 flex flex-col gap-1 text-sm text-muted">
-                {lowInventory.map((v, i) => (
-                  <li key={i}>
-                    {v.productTitle}
-                    {v.variantTitle !== "Default Title" ? ` — ${v.variantTitle}` : ""}:{" "}
-                    <span className="font-medium text-foreground">
-                      {v.quantity} left
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-1 text-sm text-muted">
-                Nothing low on stock right now.
-              </p>
-            )
-          ) : (
-            <p className="mt-1 text-sm text-muted">
-              Waiting on Shopify sync (Backlog B1) for commerce_inventory.
-            </p>
-          )}
-        </div>
-
         {STUB_BRIEFING_LINES.map((line) => (
           <div
             key={line.label}
