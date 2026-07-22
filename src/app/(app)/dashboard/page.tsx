@@ -166,6 +166,20 @@ export default async function DashboardPage() {
     }),
   );
 
+  // Whoever's logged in sees their own "one thing to do today" card
+  // first (Jacob's ask) — everyone else keeps the original relative
+  // order below it. `firstName` is already derived from the logged-in
+  // user's email above, so this is just a stable sort keyed on a
+  // match against that.
+  const revenueFocusCards = REVENUE_FOCUS_PEOPLE.map((person, i) => ({
+    person,
+    recommendation: recommendations[i],
+  })).sort((a, b) => {
+    const aIsMe = a.person.name === firstName ? 0 : 1;
+    const bIsMe = b.person.name === firstName ? 0 : 1;
+    return aIsMe - bIsMe;
+  });
+
   return (
     // Full-bleed background photo behind the whole dashboard (Jacob's
     // ask) — negative margins cancel out <main>'s own padding so the
@@ -337,8 +351,7 @@ export default async function DashboardPage() {
         {/* Per-person "one thing to drive revenue today" (Jacob's ask) —
             same stub-card treatment as the rest of the not-yet-built
             briefing lines below, just placed right under Today's tasks. */}
-        {REVENUE_FOCUS_PEOPLE.map((person, i) => {
-          const recommendation = recommendations[i];
+        {revenueFocusCards.map(({ person, recommendation }) => {
           return (
             <div
               key={person.name}
