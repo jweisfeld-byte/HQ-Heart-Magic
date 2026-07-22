@@ -48,13 +48,16 @@ export type Tag = {
 };
 
 // One entry, many linked docs (Knowledge Graph v1 Section 4's Reference
-// model) — a Google Drive link, an article, etc.
+// model) — a Google Drive link, an article, or a file uploaded straight
+// into HQ's own Storage bucket (Jacob's ask: host docs locally,
+// alongside Drive linking, not instead of it).
 export type Reference = {
   id: string;
   entry_id: string;
-  target_type: string; // "url" | "drive_file"
+  target_type: string; // "url" | "drive_file" | "upload"
   url: string | null;
   drive_file_id: string | null;
+  storage_path: string | null;
   label: string;
   created_at: string;
 };

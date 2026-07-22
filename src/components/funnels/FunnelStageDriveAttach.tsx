@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 /**
  * Single-file Google Drive attach control for one funnel stage —
@@ -133,6 +133,7 @@ type DriveAttachable = {
   file_label: string | null;
   file_url: string | null;
   drive_file_id: string | null;
+  storage_path?: string | null;
 };
 
 // Generic — used both for a funnel_stage row and a funnel_stage_asset
@@ -151,7 +152,10 @@ export function FunnelStageDriveAttach({
 }) {
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tokenClientRef = useRef<GoogleTokenClient | null>(null);
   const resultHandlerRef = useRef<((doc: PickerDoc | null, error?: string) => void) | null>(null);
@@ -233,6 +237,42 @@ export function FunnelStageDriveAttach({
   }
 
   const hasFile = Boolean(stage.drive_file_id || stage.file_url);
+  const fileIcon = stage.storage_path ? "📁" : "📄";
+
+  function handleUploadClick() {
+    setUploadError(null);
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChosen(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    const body = new FormData();
+    body.append("file", file);
+
+    fetch("/api/uploads/document", { method: "POST", body })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.error) {
+          setUploadError(json.error);
+          return;
+        }
+        const form = formRef.current;
+        if (form) {
+          (form.elements.namedItem("fileLabel") as HTMLInputElement).value = json.name;
+          (form.elements.namedItem("fileUrl") as HTMLInputElement).value = json.url;
+          (form.elements.namedItem("driveFileId") as HTMLInputElement).value = "";
+          (form.elements.namedItem("storagePath") as HTMLInputElement).value = json.path;
+          form.requestSubmit();
+        }
+      })
+      .catch(() => setUploadError("Upload failed — try again."))
+      .finally(() => setUploading(false));
+  }
 
   return (
     <div className="flex flex-col gap-1">
@@ -242,7 +282,14 @@ export function FunnelStageDriveAttach({
         <input type="hidden" name="fileLabel" defaultValue={stage.file_label ?? ""} />
         <input type="hidden" name="fileUrl" defaultValue={stage.file_url ?? ""} />
         <input type="hidden" name="driveFileId" defaultValue={stage.drive_file_id ?? ""} />
+        <input type="hidden" name="storagePath" defaultValue={stage.storage_path ?? ""} />
       </form>
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileChosen}
+        className="hidden"
+      />
 
       {hasFile ? (
         <div className="flex items-center gap-2">
@@ -254,11 +301,11 @@ export function FunnelStageDriveAttach({
               className="truncate text-sm text-accent hover:underline"
               title={stage.file_label ?? undefined}
             >
-              📄 {stage.file_label ?? "Attached file"}
+              {fileIcon} {stage.file_label ?? "Attached file"}
             </a>
           ) : (
             <span className="truncate text-sm text-foreground">
-              📄 {stage.file_label ?? "Attached file"}
+              {fileIcon} {stage.file_label ?? "Attached file"}
             </span>
           )}
           <button
@@ -269,6 +316,14 @@ export function FunnelStageDriveAttach({
           >
             {picking ? "Opening…" : "Change"}
           </button>
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="text-xs text-muted hover:text-accent disabled:opacity-50"
+          >
+            {uploading ? "Uploading…" : "Upload instead"}
+          </button>
           <form action={removeAction} onClick={(e) => e.stopPropagation()}>
             <input type="hidden" name="id" value={stage.id} />
             <input type="hidden" name="funnelId" value={funnelId} />
@@ -278,16 +333,27 @@ export function FunnelStageDriveAttach({
           </form>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={handlePickFromDrive}
-          disabled={picking}
-          className="text-left text-sm text-accent hover:underline disabled:opacity-50"
-        >
-          {picking ? "Opening Drive…" : "📎 Pick from Google Drive"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handlePickFromDrive}
+            disabled={picking}
+            className="text-left text-sm text-accent hover:underline disabled:opacity-50"
+          >
+            {picking ? "Opening Drive…" : "📎 Pick from Google Drive"}
+          </button>
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="text-left text-sm text-accent hover:underline disabled:opacity-50"
+          >
+            {uploading ? "Uploading…" : "📁 Upload a file"}
+          </button>
+        </div>
       )}
       {pickerError && <p className="text-xs text-red-600">{pickerError}</p>}
+      {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
     </div>
   );
 }

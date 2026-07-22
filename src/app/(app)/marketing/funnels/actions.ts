@@ -238,6 +238,7 @@ export async function setAssetFileAction(formData: FormData) {
     fileLabel: String(formData.get("fileLabel") ?? "").trim() || null,
     fileUrl: String(formData.get("fileUrl") ?? "").trim() || null,
     driveFileId: String(formData.get("driveFileId") ?? "").trim() || null,
+    storagePath: String(formData.get("storagePath") ?? "").trim() || null,
   });
 
   if ("error" in result) {

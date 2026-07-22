@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
-export type ReferenceRow = { label: string; url: string; driveFileId?: string };
+export type ReferenceRow = {
+  label: string;
+  url: string;
+  driveFileId?: string;
+  storagePath?: string;
+};
 
 /**
  * Minimal shape of the bits of Google's Identity Services + Picker APIs
@@ -184,6 +189,9 @@ export function ReferencesEditor({ initial }: { initial: ReferenceRow[] }) {
   );
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tokenClientRef = useRef<GoogleTokenClient | null>(null);
   const resultHandlerRef = useRef<
@@ -248,9 +256,43 @@ export function ReferencesEditor({ initial }: { initial: ReferenceRow[] }) {
   function update(index: number, field: "label" | "url", value: string) {
     setRows((prev) =>
       prev.map((row, i) =>
-        i === index ? { ...row, [field]: value, driveFileId: undefined } : row,
+        i === index
+          ? { ...row, [field]: value, driveFileId: undefined, storagePath: undefined }
+          : row,
       ),
     );
+  }
+
+  // Local upload — hosts the file directly in HQ's own Storage bucket
+  // (Jacob's ask) as an alternative to picking from Google Drive. Fires
+  // on file selection, uploads immediately (no separate "attach"
+  // button), then adds a row exactly like a Drive pick does.
+  function handleUploadClick() {
+    setUploadError(null);
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChosen(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    const body = new FormData();
+    body.append("file", file);
+
+    fetch("/api/uploads/document", { method: "POST", body })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.error) {
+          setUploadError(json.error);
+          return;
+        }
+        addRow({ label: json.name, url: json.url, storagePath: json.path });
+      })
+      .catch(() => setUploadError("Upload failed — try again."))
+      .finally(() => setUploading(false));
   }
 
   function addRow(row: ReferenceRow = { label: "", url: "" }) {
@@ -334,20 +376,37 @@ export function ReferencesEditor({ initial }: { initial: ReferenceRow[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <label className="text-sm font-medium text-foreground">
           Linked documents (optional)
         </label>
-        <button
-          type="button"
-          onClick={handlePickFromDrive}
-          disabled={picking}
-          className="text-sm text-accent hover:underline disabled:opacity-50"
-        >
-          {picking ? "Opening Drive…" : "📎 Pick from Google Drive"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="text-sm text-accent hover:underline disabled:opacity-50"
+          >
+            {uploading ? "Uploading…" : "📁 Upload a file"}
+          </button>
+          <button
+            type="button"
+            onClick={handlePickFromDrive}
+            disabled={picking}
+            className="text-sm text-accent hover:underline disabled:opacity-50"
+          >
+            {picking ? "Opening Drive…" : "📎 Pick from Google Drive"}
+          </button>
+        </div>
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileChosen}
+        className="hidden"
+      />
       {pickerError && <p className="mt-1 text-xs text-red-600">{pickerError}</p>}
+      {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
 
       <div className="mt-1 flex flex-col gap-2">
         {rows.map((row, i) => (
@@ -372,11 +431,20 @@ export function ReferencesEditor({ initial }: { initial: ReferenceRow[] }) {
               name="referenceDriveFileId"
               value={row.driveFileId ?? ""}
             />
-            {row.driveFileId && (
+            <input
+              type="hidden"
+              name="referenceStoragePath"
+              value={row.storagePath ?? ""}
+            />
+            {row.storagePath ? (
+              <span className="text-xs text-muted" title="Hosted in HQ">
+                📁
+              </span>
+            ) : row.driveFileId ? (
               <span className="text-xs text-muted" title="Linked via Google Drive">
                 📄
               </span>
-            )}
+            ) : null}
             <button
               type="button"
               onClick={() => removeRow(i)}

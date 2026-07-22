@@ -156,6 +156,7 @@ export async function EntryDetailFormPage({
               label: r.label,
               url: r.url ?? "",
               driveFileId: r.drive_file_id ?? undefined,
+              storagePath: r.storage_path ?? undefined,
             }))}
           />
 
@@ -308,7 +309,11 @@ export async function EntryDetailFormPage({
                   rel="noreferrer"
                   className="text-sm text-accent hover:underline"
                 >
-                  {r.target_type === "drive_file" ? "📄 " : "🔗 "}
+                  {r.target_type === "upload"
+                    ? "📁 "
+                    : r.target_type === "drive_file"
+                      ? "📄 "
+                      : "🔗 "}
                   {r.label} ↗
                 </a>
               </li>

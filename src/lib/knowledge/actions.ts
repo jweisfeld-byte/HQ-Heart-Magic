@@ -15,10 +15,12 @@ function readReferences(formData: FormData) {
   const labels = formData.getAll("referenceLabel").map(String);
   const urls = formData.getAll("referenceUrl").map(String);
   const driveFileIds = formData.getAll("referenceDriveFileId").map(String);
+  const storagePaths = formData.getAll("referenceStoragePath").map(String);
   return labels.map((label, i) => ({
     label,
     url: urls[i] ?? "",
     driveFileId: driveFileIds[i] || undefined,
+    storagePath: storagePaths[i] || undefined,
   }));
 }
 

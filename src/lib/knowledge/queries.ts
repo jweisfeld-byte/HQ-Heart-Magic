@@ -166,7 +166,7 @@ export async function getReferencesForEntry(
 
 export async function setReferencesForEntry(
   entryId: string,
-  refs: { label: string; url: string; driveFileId?: string }[],
+  refs: { label: string; url: string; driveFileId?: string; storagePath?: string }[],
 ): Promise<void> {
   const supabase = createAdminClient();
 
@@ -175,6 +175,7 @@ export async function setReferencesForEntry(
       label: r.label.trim(),
       url: r.url.trim(),
       driveFileId: r.driveFileId?.trim() || null,
+      storagePath: r.storagePath?.trim() || null,
     }))
     .filter((r) => r.label && r.url);
 
@@ -188,10 +189,12 @@ export async function setReferencesForEntry(
       label: r.label,
       url: r.url,
       // Distinguishes a Drive Picker selection (Technical Architecture v1
-      // Section 6) from a manually pasted URL — same table, different
+      // Section 6), a file uploaded straight into HQ's own Storage
+      // bucket, and a manually pasted URL — same table, different
       // provenance.
-      target_type: r.driveFileId ? "drive_file" : "url",
+      target_type: r.storagePath ? "upload" : r.driveFileId ? "drive_file" : "url",
       drive_file_id: r.driveFileId,
+      storage_path: r.storagePath,
     })),
   );
 }

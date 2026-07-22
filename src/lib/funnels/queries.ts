@@ -43,6 +43,7 @@ export type FunnelStageAsset = {
   file_label: string | null;
   file_url: string | null;
   drive_file_id: string | null;
+  storage_path: string | null;
   ad_copy: string;
   meta_ad_id: string | null;
   meta_ad_name: string | null;
@@ -441,6 +442,7 @@ export async function setStageAssetFile(
     fileLabel: string | null;
     fileUrl: string | null;
     driveFileId: string | null;
+    storagePath?: string | null;
   },
 ): Promise<{ ok: true } | { error: string }> {
   try {
@@ -451,6 +453,7 @@ export async function setStageAssetFile(
         file_label: input.fileLabel,
         file_url: input.fileUrl,
         drive_file_id: input.driveFileId,
+        storage_path: input.storagePath ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
