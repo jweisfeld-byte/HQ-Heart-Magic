@@ -366,7 +366,9 @@ export default async function DashboardPage() {
                       : "font-medium text-foreground"
                   }
                 >
-                  What&apos;s the one thing {person.name} can do today to drive the most revenue?
+                  {isMe
+                    ? "What\u2019s the one thing I can do today to drive the most revenue?"
+                    : `What's the one thing ${person.name} can do today to drive the most revenue?`}
                 </span>
                 <span
                   className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
