@@ -44,10 +44,18 @@ export async function extractPdfTextFromUrl(url: string): Promise<string | null>
     await parser.destroy?.();
 
     const text = result.text?.trim();
-    if (!text) return null;
+    if (!text) {
+      console.error("extractPdfTextFromUrl: pdf-parse returned no text for", url);
+      return null;
+    }
 
     return text.length > MAX_EXTRACTED_CHARS ? text.slice(0, MAX_EXTRACTED_CHARS) : text;
-  } catch {
+  } catch (err) {
+    // Logged so we can actually see why extraction failed (e.g.
+    // pdfjs-dist's missing canvas/DOMMatrix polyfills breaking text
+    // positioning in this serverless environment) instead of it just
+    // silently degrading to "no extracted text" with no trace.
+    console.error("extractPdfTextFromUrl: failed for", url, err);
     return null;
   }
 }

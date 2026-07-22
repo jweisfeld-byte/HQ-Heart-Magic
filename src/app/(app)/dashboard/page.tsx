@@ -363,7 +363,7 @@ export default async function DashboardPage() {
                 <span
                   className={
                     isMe
-                      ? "text-base font-semibold text-black"
+                      ? "text-base font-semibold text-foreground"
                       : "font-medium text-foreground"
                   }
                 >
@@ -383,7 +383,7 @@ export default async function DashboardPage() {
               </div>
               <p
                 className={
-                  isMe ? "mt-1 text-base text-black" : "mt-1 text-sm text-muted"
+                  isMe ? "mt-1 text-base text-foreground" : "mt-1 text-sm text-muted"
                 }
               >
                 {recommendation ??
