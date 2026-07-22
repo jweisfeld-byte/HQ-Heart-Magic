@@ -17,6 +17,8 @@ import {
   setStageAssetFile,
   deleteStageAsset,
   updateStageAssetCopy,
+  setStageAssetMetaAd,
+  removeStageAssetMetaAd,
 } from "@/lib/funnels/queries";
 
 export async function createFunnelAction(formData: FormData) {
@@ -289,6 +291,41 @@ export async function updateAssetCopyAction(formData: FormData) {
   }
 
   const result = await updateStageAssetCopy(id, adCopy);
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath(`/marketing/funnels/${funnelId}`);
+}
+
+export async function setAssetMetaAdAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const funnelId = String(formData.get("funnelId") ?? "");
+  const metaAdId = String(formData.get("metaAdId") ?? "").trim();
+  const metaAdName = String(formData.get("metaAdName") ?? "").trim();
+  const metaAdThumbnailUrl = String(formData.get("metaAdThumbnailUrl") ?? "").trim() || null;
+
+  if (!id || !metaAdId) {
+    return;
+  }
+
+  const result = await setStageAssetMetaAd(id, { metaAdId, metaAdName, metaAdThumbnailUrl });
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath(`/marketing/funnels/${funnelId}`);
+}
+
+export async function removeAssetMetaAdAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const funnelId = String(formData.get("funnelId") ?? "");
+
+  if (!id) {
+    return;
+  }
+
+  const result = await removeStageAssetMetaAd(id);
   if ("error" in result) {
     return;
   }

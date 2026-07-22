@@ -44,6 +44,9 @@ export type FunnelStageAsset = {
   file_url: string | null;
   drive_file_id: string | null;
   ad_copy: string;
+  meta_ad_id: string | null;
+  meta_ad_name: string | null;
+  meta_ad_thumbnail_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -492,6 +495,55 @@ export async function updateStageAssetCopy(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Could not update ad copy.",
+    };
+  }
+}
+
+export async function setStageAssetMetaAd(
+  id: string,
+  input: { metaAdId: string; metaAdName: string; metaAdThumbnailUrl: string | null },
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("funnel_stage_asset")
+      .update({
+        meta_ad_id: input.metaAdId,
+        meta_ad_name: input.metaAdName,
+        meta_ad_thumbnail_url: input.metaAdThumbnailUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not link the Meta ad.",
+    };
+  }
+}
+
+export async function removeStageAssetMetaAd(
+  id: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("funnel_stage_asset")
+      .update({
+        meta_ad_id: null,
+        meta_ad_name: null,
+        meta_ad_thumbnail_url: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not unlink the Meta ad.",
     };
   }
 }

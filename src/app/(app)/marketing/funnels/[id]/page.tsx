@@ -14,11 +14,15 @@ import {
   removeAssetFileAction,
   deleteAssetAction,
   updateAssetCopyAction,
+  setAssetMetaAdAction,
+  removeAssetMetaAdAction,
 } from "@/app/(app)/marketing/funnels/actions";
 import type { FunnelTriangleStage } from "@/components/funnels/FunnelTriangle";
 import { ExpandableFunnelTriangle } from "@/components/funnels/ExpandableFunnelTriangle";
 import { FunnelStageDriveAttach } from "@/components/funnels/FunnelStageDriveAttach";
 import { AutoSubmitField } from "@/components/funnels/AutoSubmitField";
+import { MetaAdPicker } from "@/components/funnels/MetaAdPicker";
+import { getAdInsights, type MetaAdInsights } from "@/lib/meta/queries";
 
 export default async function FunnelDetailPage({
   params,
@@ -85,6 +89,22 @@ export default async function FunnelDetailPage({
 
   const stages = (await getFunnelStages(funnel.id)) ?? [];
   const assetsByStage = await getAssetsForStages(stages.map((s) => s.id));
+
+  // Live spend/impressions/CTR for every format linked to a Meta ad
+  // (Jacob's ask) — fetched in parallel, one insights call per unique
+  // linked ad, so having the same ad linked twice doesn't double-fetch.
+  const linkedAdIds = Array.from(
+    new Set(
+      Object.values(assetsByStage)
+        .flat()
+        .map((a) => a.meta_ad_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const insightsEntries = await Promise.all(
+    linkedAdIds.map(async (adId) => [adId, await getAdInsights(adId)] as const),
+  );
+  const insightsByAdId: Record<string, MetaAdInsights | null> = Object.fromEntries(insightsEntries);
 
   const triangleStages: FunnelTriangleStage[] = stages.map((s) => {
     const assets = assetsByStage[s.id] ?? [];
@@ -222,6 +242,61 @@ export default async function FunnelDetailPage({
                           className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-xs text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
                         />
                       </form>
+
+                      <div className="pl-1">
+                        <MetaAdPicker
+                          asset={asset}
+                          funnelId={funnel.id}
+                          action={setAssetMetaAdAction}
+                          removeAction={removeAssetMetaAdAction}
+                        />
+                      </div>
+
+                      {asset.meta_ad_id && (
+                        <div className="pl-1">
+                          {(() => {
+                            const insights = insightsByAdId[asset.meta_ad_id];
+                            if (!insights) {
+                              return (
+                                <p className="text-xs text-muted">
+                                  Metrics not available yet for this ad.
+                                </p>
+                              );
+                            }
+                            return (
+                              <div className="flex flex-wrap items-center gap-3 rounded-lg bg-accent-soft/10 px-2 py-1.5 text-xs text-foreground">
+                                <span className="rounded-full bg-green-100 px-2 py-0.5 font-medium text-green-700">
+                                  Live · last 30d
+                                </span>
+                                <span>
+                                  Spend{" "}
+                                  <span className="font-semibold">
+                                    ${insights.spend.toFixed(2)}
+                                  </span>
+                                </span>
+                                <span>
+                                  Impressions{" "}
+                                  <span className="font-semibold">
+                                    {insights.impressions.toLocaleString()}
+                                  </span>
+                                </span>
+                                <span>
+                                  Clicks{" "}
+                                  <span className="font-semibold">
+                                    {insights.clicks.toLocaleString()}
+                                  </span>
+                                </span>
+                                <span>
+                                  CTR{" "}
+                                  <span className="font-semibold">
+                                    {insights.ctr.toFixed(2)}%
+                                  </span>
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   ))}
 

@@ -10,6 +10,7 @@ import {
   resetUserDashboardBackground,
   type UserRole,
 } from "@/lib/settings/queries";
+import { saveMetaConnection, disconnectMeta } from "@/lib/meta/queries";
 
 // Appearance is personal to whoever is logged in (Jacob's ask) — every
 // appearance action reads the CURRENT user's own session rather than
@@ -119,4 +120,29 @@ export async function updateUserRoleAction(formData: FormData) {
   }
 
   revalidatePath("/settings/roles");
+}
+
+export async function connectMetaAction(formData: FormData) {
+  const adAccountId = String(formData.get("adAccountId") ?? "").trim();
+  const accessToken = String(formData.get("accessToken") ?? "").trim();
+
+  if (!adAccountId || !accessToken) {
+    return;
+  }
+
+  const result = await saveMetaConnection({ adAccountId, accessToken });
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath("/settings/integrations");
+}
+
+export async function disconnectMetaAction() {
+  const result = await disconnectMeta();
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath("/settings/integrations");
 }
