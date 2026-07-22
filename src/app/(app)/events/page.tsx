@@ -152,7 +152,7 @@ export default async function EventsPage({
             <div
               key={i}
               className={`flex min-h-[90px] flex-col gap-1 p-1.5 ${
-                hasEvents ? "bg-accent/10" : "bg-surface"
+                hasEvents ? "border-border bg-surface" : "bg-surface"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -178,7 +178,7 @@ export default async function EventsPage({
                   <Link
                     key={e.id}
                     href={`/events/${e.id}`}
-                    className="truncate rounded bg-accent/10 px-1.5 py-0.5 text-xs font-medium text-accent hover:bg-accent/20"
+                    className="truncate rounded bg-accent/15 px-1.5 py-0.5 text-sm font-bold text-accent hover:bg-accent/25"
                     title={e.title}
                   >
                     {e.title}
