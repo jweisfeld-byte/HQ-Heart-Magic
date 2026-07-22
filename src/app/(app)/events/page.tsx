@@ -146,11 +146,14 @@ export default async function EventsPage({
           const dateStr = ymd(year, month, day);
           const dayEvents = byDay.get(dateStr) ?? [];
           const isToday = dateStr === todayStr;
+          const hasEvents = dayEvents.length > 0;
 
           return (
             <div
               key={i}
-              className="flex min-h-[90px] flex-col gap-1 bg-surface p-1.5"
+              className={`flex min-h-[90px] flex-col gap-1 p-1.5 ${
+                hasEvents ? "bg-accent/10" : "bg-surface"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <span
