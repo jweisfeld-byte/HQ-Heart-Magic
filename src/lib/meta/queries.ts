@@ -114,9 +114,21 @@ export type MetaAdSummary = {
 // picker — Jacob confirmed manual selection over auto-matching by
 // naming convention, so this just needs to be browsable/searchable,
 // not perfectly matched automatically.
-export async function listRecentAds(query?: string): Promise<MetaAdSummary[] | null> {
+//
+// Returns a discriminated result (not just null on any failure) so the
+// caller — and ultimately the picker UI — can tell "you haven't
+// connected Meta Ads yet" apart from "you're connected, but the actual
+// Graph API call failed" (bad/expired token, wrong ad account id,
+// missing permission, etc.). Collapsing both into one generic message
+// was actively misleading once a connection existed but the token
+// itself was the problem.
+export async function listRecentAds(
+  query?: string,
+): Promise<{ ads: MetaAdSummary[] } | { error: string }> {
   const connection = await getMetaConnection();
-  if (!connection) return null;
+  if (!connection) {
+    return { error: "Meta Ads isn't connected yet — see Settings > Integrations." };
+  }
 
   try {
     const url = new URL(`${GRAPH_API_BASE}/act_${connection.ad_account_id}/ads`);
@@ -125,9 +137,19 @@ export async function listRecentAds(query?: string): Promise<MetaAdSummary[] | n
     url.searchParams.set("access_token", connection.access_token);
 
     const res = await fetch(url.toString(), { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!Array.isArray(json.data)) return null;
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const metaMessage = json?.error?.message;
+      return {
+        error: metaMessage
+          ? `Meta rejected the request: ${metaMessage}`
+          : `Meta API error (HTTP ${res.status}). Check the ad account ID and access token in Settings > Integrations.`,
+      };
+    }
+    if (!json || !Array.isArray(json.data)) {
+      return { error: "Meta returned an unexpected response." };
+    }
 
     type RawAd = {
       id: string;
@@ -148,9 +170,11 @@ export async function listRecentAds(query?: string): Promise<MetaAdSummary[] | n
       ads = ads.filter((ad) => ad.name.toLowerCase().includes(q));
     }
 
-    return ads;
-  } catch {
-    return null;
+    return { ads };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Couldn't reach Meta — try again.",
+    };
   }
 }
 

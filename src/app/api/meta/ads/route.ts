@@ -7,14 +7,11 @@ import { listRecentAds } from "@/lib/meta/queries";
 // form submit.
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q") ?? undefined;
-  const ads = await listRecentAds(q);
+  const result = await listRecentAds(q);
 
-  if (ads === null) {
-    return NextResponse.json(
-      { error: "Meta Ads isn't connected yet — see Settings > Integrations." },
-      { status: 400 },
-    );
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json({ ads });
+  return NextResponse.json({ ads: result.ads });
 }
