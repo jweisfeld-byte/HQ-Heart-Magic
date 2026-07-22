@@ -85,13 +85,16 @@ export async function deleteFunnelAction(formData: FormData) {
 export async function addStageAction(formData: FormData) {
   const funnelId = String(formData.get("funnelId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
+
+  // Same reasoning as addAssetAction: no-op on a blank submit instead
+  // of crashing the page.
   if (!funnelId || !name) {
-    throw new Error("A stage name is required.");
+    return;
   }
 
   const result = await addFunnelStage(funnelId, name);
   if ("error" in result) {
-    throw new Error(result.error);
+    return;
   }
 
   revalidatePath(`/marketing/funnels/${funnelId}`);
@@ -188,13 +191,18 @@ export async function addAssetAction(formData: FormData) {
   const stageId = String(formData.get("stageId") ?? "");
   const funnelId = String(formData.get("funnelId") ?? "");
   const label = String(formData.get("label") ?? "").trim();
+
+  // A blank submit (button clicked before typing a label) should just
+  // no-op rather than crash the whole page — the input's `required`
+  // attribute stops this in normal use, but a stray empty submit
+  // shouldn't take the page down either.
   if (!stageId || !label) {
-    throw new Error("A format label is required.");
+    return;
   }
 
   const result = await addStageAsset(stageId, label);
   if ("error" in result) {
-    throw new Error(result.error);
+    return;
   }
 
   revalidatePath(`/marketing/funnels/${funnelId}`);

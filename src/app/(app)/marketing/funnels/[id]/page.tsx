@@ -219,6 +219,7 @@ export default async function FunnelDetailPage({
                   <input type="hidden" name="funnelId" value={funnel.id} />
                   <input
                     name="label"
+                    required
                     placeholder="e.g. Founder Story Ad"
                     className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
                   />
@@ -244,6 +245,7 @@ export default async function FunnelDetailPage({
           <input type="hidden" name="funnelId" value={funnel.id} />
           <input
             name="name"
+            required
             placeholder="e.g. Retargeting"
             className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
           />
