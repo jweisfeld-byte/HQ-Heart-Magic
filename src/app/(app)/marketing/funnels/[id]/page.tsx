@@ -80,10 +80,30 @@ export default async function FunnelDetailPage({
     );
   }
 
-  const stages = (await getFunnelStages(funnel.id)) ?? [];
-  const assetsByStage = await getAssetsForStages(stages.map((s) => s.id));
+  let stages: Awaited<ReturnType<typeof getFunnelStages>> = [];
+  let assetsByStage: Awaited<ReturnType<typeof getAssetsForStages>> = {};
+  let debugError: string | null = null;
+  try {
+    stages = (await getFunnelStages(funnel.id)) ?? [];
+    assetsByStage = await getAssetsForStages((stages ?? []).map((s) => s.id));
+  } catch (err) {
+    debugError = err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : String(err);
+    stages = [];
+    assetsByStage = {};
+  }
 
-  const triangleStages: FunnelTriangleStage[] = stages.map((s) => {
+  if (debugError) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <p className="text-sm font-medium text-red-600">Temporary debug output — remove after diagnosing:</p>
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-red-300 bg-red-50 p-4 text-xs text-red-800">
+          {debugError}
+        </pre>
+      </div>
+    );
+  }
+
+  const triangleStages: FunnelTriangleStage[] = (stages ?? []).map((s) => {
     const assets = assetsByStage[s.id] ?? [];
     return {
       ...s,
@@ -91,6 +111,27 @@ export default async function FunnelDetailPage({
       filledAssetCount: assets.filter((a) => a.drive_file_id || a.file_url).length,
     };
   });
+
+  // Calling FunnelTriangle as a plain function (it's a synchronous,
+  // non-"use client" component) rather than as JSX lets this try/catch
+  // actually catch a synchronous throw inside it, to pin down exactly
+  // where the 500 on this page is coming from — JSX alone wouldn't be
+  // caught here since React defers actually invoking child components.
+  let triangleElement: ReturnType<typeof FunnelTriangle> | null = null;
+  try {
+    triangleElement = FunnelTriangle({ stages: triangleStages });
+  } catch (err) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <p className="text-sm font-medium text-red-600">
+          Temporary debug output (FunnelTriangle threw) — remove after diagnosing:
+        </p>
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-red-300 bg-red-50 p-4 text-xs text-red-800">
+          {err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : String(err)}
+        </pre>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -115,7 +156,7 @@ export default async function FunnelDetailPage({
       </div>
 
       <div className="mt-8 flex justify-center rounded-xl border border-border bg-surface p-6">
-        <FunnelTriangle stages={triangleStages} />
+        {triangleElement}
       </div>
 
       <div className="mt-8">
