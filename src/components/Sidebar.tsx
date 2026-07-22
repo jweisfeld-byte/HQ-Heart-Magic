@@ -29,10 +29,23 @@ type NavItem = {
   label: string;
   icon: string;
   iconSrc?: string;
+  external?: boolean;
 };
 
-export function Sidebar() {
+export function Sidebar({
+  teamCalendarUrl,
+}: {
+  teamCalendarUrl?: string | null;
+}) {
   const pathname = usePathname();
+
+  // "Team Calendar" links straight out to the shared Google Calendar
+  // (Jacob's ask, set in Settings > Organization) rather than an
+  // internal route — falls back to that settings page itself if
+  // nobody's pasted a calendar link in yet.
+  const teamCalendarItem: NavItem = teamCalendarUrl
+    ? { href: teamCalendarUrl, label: "Team Calendar", icon: "🗓️", external: true }
+    : { href: "/settings/organization", label: "Team Calendar", icon: "🗓️" };
 
   // Every pill stays the same size. The active/current-page pill shows
   // the app-wide rotating-rainbow-ring effect permanently (`.border-border`,
@@ -41,25 +54,35 @@ export function Sidebar() {
   // solid accent-colored fill.
   function renderItem(item: NavItem) {
     const active =
-      pathname === item.href || pathname.startsWith(`${item.href}/`);
+      !item.external &&
+      (pathname === item.href || pathname.startsWith(`${item.href}/`));
+    const className = `flex items-center gap-2.5 rounded-full border px-3 py-2 text-[16.8px] font-medium transition-colors duration-200 ease-out ${
+      active
+        ? "border-border text-accent"
+        : "glow-hover border-[color:var(--color-border)] text-foreground/80 hover:text-accent"
+    }`;
+    const content = (
+      <>
+        {item.iconSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.iconSrc} alt="" className="h-4 w-4" />
+        ) : (
+          <span aria-hidden>{item.icon}</span>
+        )}
+        {item.label}
+      </>
+    );
     return (
       <li key={item.href}>
-        <Link
-          href={item.href}
-          className={`flex items-center gap-2.5 rounded-full border px-3 py-2 text-[16.8px] font-medium transition-colors duration-200 ease-out ${
-            active
-              ? "border-border text-accent"
-              : "glow-hover border-[color:var(--color-border)] text-foreground/80 hover:text-accent"
-          }`}
-        >
-          {item.iconSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.iconSrc} alt="" className="h-4 w-4" />
-          ) : (
-            <span aria-hidden>{item.icon}</span>
-          )}
-          {item.label}
-        </Link>
+        {item.external ? (
+          <a href={item.href} target="_blank" rel="noreferrer" className={className}>
+            {content}
+          </a>
+        ) : (
+          <Link href={item.href} className={className}>
+            {content}
+          </Link>
+        )}
       </li>
     );
   }
@@ -73,6 +96,7 @@ export function Sidebar() {
       </div>
       <ul className="flex flex-1 flex-col gap-2.5">
         {NAV_ITEMS.map((item) => renderItem(item))}
+        {renderItem(teamCalendarItem)}
       </ul>
       <ul className="flex flex-col gap-2.5 pt-3">
         {renderItem(SETTINGS_ITEM)}

@@ -14,6 +14,7 @@ export type OrganizationSettings = {
   timezone: string;
   rainbow_glow_enabled: boolean;
   dashboard_background_url: string | null;
+  team_calendar_url: string | null;
   updated_at: string;
 };
 
@@ -38,6 +39,7 @@ export async function updateOrganizationSettings(input: {
   name: string;
   defaultCurrency: string;
   timezone: string;
+  teamCalendarUrl: string | null;
 }): Promise<{ ok: true } | { error: string }> {
   try {
     const supabase = createAdminClient();
@@ -47,6 +49,7 @@ export async function updateOrganizationSettings(input: {
         name: input.name,
         default_currency: input.defaultCurrency,
         timezone: input.timezone,
+        team_calendar_url: input.teamCalendarUrl,
         updated_at: new Date().toISOString(),
       })
       .eq("id", input.id);

@@ -60,6 +60,22 @@ export default async function OrganizationSettingsPage() {
         />
       </div>
 
+      <div>
+        <label className="text-sm font-medium text-foreground">
+          Team calendar URL
+        </label>
+        <input
+          name="teamCalendarUrl"
+          type="url"
+          defaultValue={org.team_calendar_url ?? ""}
+          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          placeholder="https://calendar.google.com/calendar/u/0?cid=..."
+        />
+        <p className="mt-1 text-xs text-muted">
+          The sidebar&apos;s Team Calendar link opens this — paste your shared Google Calendar&apos;s link here (Google Calendar → Settings → your calendar → &quot;Get shareable link&quot;).
+        </p>
+      </div>
+
       <div className="mt-2">
         <button
           type="submit"

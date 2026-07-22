@@ -23,10 +23,11 @@ export default async function AppLayout({
   // yet, matching the effect's original always-on behavior.
   const org = await getOrganizationSettings();
   const glowEnabled = org ? org.rainbow_glow_enabled : true;
+  const teamCalendarUrl = org?.team_calendar_url ?? null;
 
   return (
     <div className={`flex h-screen w-full ${glowEnabled ? "glow-enabled" : ""}`}>
-      <Sidebar />
+      <Sidebar teamCalendarUrl={teamCalendarUrl} />
       <div className="flex flex-1 flex-col overflow-y-auto">
         <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border bg-surface px-6 py-3">
           {/* AI Search, available from every page, not just its own route

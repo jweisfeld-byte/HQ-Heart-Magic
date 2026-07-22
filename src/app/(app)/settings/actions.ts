@@ -15,6 +15,7 @@ export async function updateOrganizationAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const defaultCurrency = String(formData.get("defaultCurrency") ?? "USD").trim();
   const timezone = String(formData.get("timezone") ?? "").trim();
+  const teamCalendarUrl = String(formData.get("teamCalendarUrl") ?? "").trim() || null;
 
   if (!id || !name) {
     throw new Error("Organization name is required.");
@@ -25,6 +26,7 @@ export async function updateOrganizationAction(formData: FormData) {
     name,
     defaultCurrency,
     timezone,
+    teamCalendarUrl,
   });
 
   if ("error" in result) {
