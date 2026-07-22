@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getFunnelById, getFunnelStages, getAssetsForStages } from "@/lib/funnels/queries";
+import {
+  getFunnelById,
+  getFunnelStages,
+  getAssetsForStages,
+  CONTENT_CATEGORIES,
+  CONTENT_CATEGORY_LABELS,
+} from "@/lib/funnels/queries";
 import {
   updateFunnelAction,
   deleteFunnelAction,
@@ -14,6 +20,7 @@ import {
   removeAssetFileAction,
   deleteAssetAction,
   updateAssetCopyAction,
+  updateAssetCategoryAction,
   setAssetMetaAdAction,
   removeAssetMetaAdAction,
 } from "@/app/(app)/marketing/funnels/actions";
@@ -21,6 +28,7 @@ import type { FunnelTriangleStage } from "@/components/funnels/FunnelTriangle";
 import { ExpandableFunnelTriangle } from "@/components/funnels/ExpandableFunnelTriangle";
 import { FunnelStageDriveAttach } from "@/components/funnels/FunnelStageDriveAttach";
 import { AutoSubmitField } from "@/components/funnels/AutoSubmitField";
+import { ContentCategorySelect } from "@/components/funnels/ContentCategorySelect";
 import { MetaAdPicker } from "@/components/funnels/MetaAdPicker";
 import { getAdInsights, type MetaAdInsights } from "@/lib/meta/queries";
 
@@ -217,6 +225,12 @@ export default async function FunnelDetailPage({
                             removeAction={removeAssetFileAction}
                           />
                         </div>
+                        <ContentCategorySelect
+                          id={asset.id}
+                          funnelId={funnel.id}
+                          category={asset.content_category}
+                          action={updateAssetCategoryAction}
+                        />
                         <form action={deleteAssetAction}>
                           <input type="hidden" name="id" value={asset.id} />
                           <input type="hidden" name="funnelId" value={funnel.id} />
@@ -303,6 +317,46 @@ export default async function FunnelDetailPage({
                   {assets.length === 0 && (
                     <p className="text-xs text-muted">No formats built out for this stage yet.</p>
                   )}
+
+                  {assets.length > 0 && (() => {
+                    // Jacob's ask: each stage should have an even split of
+                    // UGC / Brand Made / AI across its formats — surfaced
+                    // here as a quick counts readout, not a hard rule
+                    // (stages won't always divide evenly by 3).
+                    const counts: Record<string, number> = { ugc: 0, brand_made: 0, ai: 0 };
+                    let uncategorized = 0;
+                    for (const asset of assets) {
+                      if (asset.content_category) {
+                        counts[asset.content_category] += 1;
+                      } else {
+                        uncategorized += 1;
+                      }
+                    }
+                    const categorized = assets.length - uncategorized;
+                    const target = categorized > 0 ? categorized / 3 : 0;
+                    const isEven =
+                      uncategorized === 0 &&
+                      CONTENT_CATEGORIES.every((c) => counts[c] === target);
+
+                    return (
+                      <div
+                        className={`mt-1 flex flex-wrap items-center gap-2 rounded-lg px-2 py-1 text-xs ${
+                          isEven
+                            ? "bg-green-100 text-green-700"
+                            : "bg-accent-soft/20 text-muted"
+                        }`}
+                      >
+                        <span className="font-medium">Split:</span>
+                        {CONTENT_CATEGORIES.map((c) => (
+                          <span key={c}>
+                            {CONTENT_CATEGORY_LABELS[c]} {counts[c]}
+                          </span>
+                        ))}
+                        {uncategorized > 0 && <span>Uncategorized {uncategorized}</span>}
+                        {!isEven && <span>— aim for an even split across the three</span>}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <form action={addAssetAction} className="mt-3 flex items-center gap-2">

@@ -35,6 +35,17 @@ export type FunnelStage = {
 // Content", "Founder Story Ad") — a stage can hold several of these,
 // matching Jacob's reference awareness-funnel model where each stage
 // shows multiple format cards rather than one file.
+// Jacob's ask: each format is tagged UGC / Brand Made / AI so a stage
+// can be built out with an even split across the three rather than
+// skewing all one way.
+export const CONTENT_CATEGORIES = ["ugc", "brand_made", "ai"] as const;
+export type ContentCategory = (typeof CONTENT_CATEGORIES)[number];
+export const CONTENT_CATEGORY_LABELS: Record<ContentCategory, string> = {
+  ugc: "UGC",
+  brand_made: "Brand Made",
+  ai: "AI",
+};
+
 export type FunnelStageAsset = {
   id: string;
   stage_id: string;
@@ -48,6 +59,7 @@ export type FunnelStageAsset = {
   meta_ad_id: string | null;
   meta_ad_name: string | null;
   meta_ad_thumbnail_url: string | null;
+  content_category: ContentCategory | null;
   created_at: string;
   updated_at: string;
 };
@@ -498,6 +510,26 @@ export async function updateStageAssetCopy(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Could not update ad copy.",
+    };
+  }
+}
+
+export async function updateStageAssetCategory(
+  id: string,
+  category: ContentCategory | null,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("funnel_stage_asset")
+      .update({ content_category: category, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not update the content category.",
     };
   }
 }

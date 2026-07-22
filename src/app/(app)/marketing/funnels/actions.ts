@@ -17,8 +17,11 @@ import {
   setStageAssetFile,
   deleteStageAsset,
   updateStageAssetCopy,
+  updateStageAssetCategory,
   setStageAssetMetaAd,
   removeStageAssetMetaAd,
+  type ContentCategory,
+  CONTENT_CATEGORIES,
 } from "@/lib/funnels/queries";
 
 export async function createFunnelAction(formData: FormData) {
@@ -292,6 +295,26 @@ export async function updateAssetCopyAction(formData: FormData) {
   }
 
   const result = await updateStageAssetCopy(id, adCopy);
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath(`/marketing/funnels/${funnelId}`);
+}
+
+export async function updateAssetCategoryAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const funnelId = String(formData.get("funnelId") ?? "");
+  const raw = String(formData.get("contentCategory") ?? "");
+  const category = (CONTENT_CATEGORIES as readonly string[]).includes(raw)
+    ? (raw as ContentCategory)
+    : null;
+
+  if (!id) {
+    return;
+  }
+
+  const result = await updateStageAssetCategory(id, category);
   if ("error" in result) {
     return;
   }
