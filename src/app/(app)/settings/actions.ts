@@ -1,14 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
 import {
   setUserRole,
   updateOrganizationSettings,
-  updateDashboardAppearance,
-  uploadDashboardBackground,
-  resetDashboardBackground,
+  updateUserRainbowGlow,
+  uploadUserDashboardBackground,
+  resetUserDashboardBackground,
   type UserRole,
 } from "@/lib/settings/queries";
+
+// Appearance is personal to whoever is logged in (Jacob's ask) — every
+// appearance action reads the CURRENT user's own session rather than
+// trusting a hidden form field, so nobody can (even accidentally) edit
+// someone else's appearance settings.
+async function getCurrentUserEmail(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.email ?? null;
+}
 
 export async function updateOrganizationAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
@@ -37,17 +50,17 @@ export async function updateOrganizationAction(formData: FormData) {
 }
 
 export async function updateRainbowGlowAction(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
+  const email = await getCurrentUserEmail();
   const rainbowGlowEnabled = formData.get("rainbowGlowEnabled") === "on";
 
-  if (!id) {
-    throw new Error("Missing organization settings id.");
+  if (!email) {
+    return;
   }
 
-  const result = await updateDashboardAppearance({ id, rainbowGlowEnabled });
+  const result = await updateUserRainbowGlow(email, rainbowGlowEnabled);
 
   if ("error" in result) {
-    throw new Error(result.error);
+    return;
   }
 
   revalidatePath("/settings/appearance");
@@ -55,37 +68,34 @@ export async function updateRainbowGlowAction(formData: FormData) {
 }
 
 export async function uploadDashboardBackgroundAction(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
+  const email = await getCurrentUserEmail();
   const file = formData.get("file") as File | null;
 
-  if (!id) {
-    throw new Error("Missing organization settings id.");
-  }
-  if (!file) {
-    throw new Error("Choose an image file first.");
+  if (!email || !file) {
+    return;
   }
 
-  const result = await uploadDashboardBackground({ id, file });
+  const result = await uploadUserDashboardBackground({ email, file });
 
   if ("error" in result) {
-    throw new Error(result.error);
+    return;
   }
 
   revalidatePath("/settings/appearance");
   revalidatePath("/dashboard");
 }
 
-export async function resetDashboardBackgroundAction(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
+export async function resetDashboardBackgroundAction() {
+  const email = await getCurrentUserEmail();
 
-  if (!id) {
-    throw new Error("Missing organization settings id.");
+  if (!email) {
+    return;
   }
 
-  const result = await resetDashboardBackground(id);
+  const result = await resetUserDashboardBackground(email);
 
   if ("error" in result) {
-    throw new Error(result.error);
+    return;
   }
 
   revalidatePath("/settings/appearance");

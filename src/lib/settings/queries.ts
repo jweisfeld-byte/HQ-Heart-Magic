@@ -157,6 +157,140 @@ export async function resetDashboardBackground(
   }
 }
 
+// Per-user Appearance settings (rainbow glow + dashboard background) —
+// Jacob's ask: appearance should be personal to whoever is logged in,
+// not shared across everybody's HQ. Keyed by email since that's the
+// stable identifier already used everywhere else (assignees, roles).
+export type UserAppearanceSettings = {
+  email: string;
+  rainbow_glow_enabled: boolean;
+  dashboard_background_url: string | null;
+  updated_at: string;
+};
+
+const DEFAULT_USER_APPEARANCE: Omit<UserAppearanceSettings, "email" | "updated_at"> = {
+  rainbow_glow_enabled: true,
+  dashboard_background_url: null,
+};
+
+// Returns sensible defaults (glow on, no custom background) rather than
+// null when a user has never visited Settings > Appearance — only a
+// genuinely missing table/schema returns null, matching this file's
+// existing "fail gracefully" convention.
+export async function getUserAppearanceSettings(
+  email: string,
+): Promise<UserAppearanceSettings | null> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("user_appearance_settings")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (error) return null;
+    if (!data) {
+      return {
+        email,
+        ...DEFAULT_USER_APPEARANCE,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    return data as UserAppearanceSettings;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateUserRainbowGlow(
+  email: string,
+  rainbowGlowEnabled: boolean,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("user_appearance_settings").upsert({
+      email,
+      rainbow_glow_enabled: rainbowGlowEnabled,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+const MAX_USER_BACKGROUND_BYTES = 8 * 1024 * 1024; // 8MB
+
+// Reuses the existing public `dashboard-backgrounds` Storage bucket,
+// just namespaced per user so people don't overwrite each other's photo.
+export async function uploadUserDashboardBackground(input: {
+  email: string;
+  file: File;
+}): Promise<{ ok: true; url: string } | { error: string }> {
+  const { email, file } = input;
+
+  if (!file || file.size === 0) {
+    return { error: "Choose an image file first." };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { error: "That file isn't an image." };
+  }
+  if (file.size > MAX_USER_BACKGROUND_BYTES) {
+    return { error: "Image is too large (8MB max)." };
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeEmail = email.replace(/[^a-zA-Z0-9]/g, "-");
+    const path = `background-${safeEmail}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("dashboard-backgrounds")
+      .upload(path, file, { contentType: file.type, upsert: true });
+
+    if (uploadError) return { error: uploadError.message };
+
+    const { data: publicUrlData } = supabase.storage
+      .from("dashboard-backgrounds")
+      .getPublicUrl(path);
+
+    const { error: updateError } = await supabase
+      .from("user_appearance_settings")
+      .upsert({
+        email,
+        dashboard_background_url: publicUrlData.publicUrl,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (updateError) return { error: updateError.message };
+
+    return { ok: true, url: publicUrlData.publicUrl };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function resetUserDashboardBackground(
+  email: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("user_appearance_settings").upsert({
+      email,
+      dashboard_background_url: null,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
 export type WorkspaceUser = {
   id: string;
   email: string;

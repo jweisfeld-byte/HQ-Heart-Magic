@@ -1,4 +1,6 @@
-import { getOrganizationSettings } from "@/lib/settings/queries";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getUserAppearanceSettings } from "@/lib/settings/queries";
 import {
   updateRainbowGlowAction,
   uploadDashboardBackgroundAction,
@@ -8,17 +10,27 @@ import { ThemeToggle } from "@/components/settings/ThemeToggle";
 
 // Template F, same shape as the other Settings screens. Jacob's ask:
 // a way to turn the rainbow border-glow effect off without asking me,
-// and a way to swap the dashboard's background photo for his own.
+// and a way to swap the dashboard's background photo for his own —
+// and, per his later ask, scoped to just the logged-in person rather
+// than shared across everybody's HQ.
 export default async function AppearanceSettingsPage() {
-  const org = await getOrganizationSettings();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    redirect("/login");
+  }
+
+  const org = await getUserAppearanceSettings(user.email);
 
   if (!org) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
         Not set up yet. Run{" "}
-        <code className="text-xs">supabase/dashboard_appearance_schema.sql</code>{" "}
-        in the Supabase SQL Editor to add the appearance columns and
-        background-photo storage bucket.
+        <code className="text-xs">supabase/user_appearance_schema.sql</code>{" "}
+        in the Supabase SQL Editor to add the per-user appearance table.
       </div>
     );
   }
@@ -42,8 +54,6 @@ export default async function AppearanceSettingsPage() {
         action={updateRainbowGlowAction}
         className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5"
       >
-        <input type="hidden" name="id" value={org.id} />
-
         <div className="flex items-start justify-between gap-4">
           <div>
             <label
@@ -53,8 +63,9 @@ export default async function AppearanceSettingsPage() {
               Rainbow border glow
             </label>
             <p className="mt-1 text-sm text-muted">
-              The slow-moving rainbow ring around cards and tiles, app-wide.
-              Turn it off for plain borders.
+              The slow-moving rainbow ring around cards and tiles, just for
+              you. Turn it off for plain borders — nobody else&apos;s view
+              changes.
             </p>
           </div>
           <input
@@ -82,7 +93,7 @@ export default async function AppearanceSettingsPage() {
             Dashboard background photo
           </span>
           <p className="mt-1 text-sm text-muted">
-            Shown full-bleed behind the dashboard. Defaults to the
+            Shown full-bleed behind your own dashboard only. Defaults to the
             snow-capped mountain photo until you upload your own.
           </p>
         </div>
@@ -105,7 +116,6 @@ export default async function AppearanceSettingsPage() {
           encType="multipart/form-data"
           className="flex flex-wrap items-center gap-3"
         >
-          <input type="hidden" name="id" value={org.id} />
           <input
             type="file"
             name="file"
@@ -123,7 +133,6 @@ export default async function AppearanceSettingsPage() {
 
         {org.dashboard_background_url ? (
           <form action={resetDashboardBackgroundAction}>
-            <input type="hidden" name="id" value={org.id} />
             <button
               type="submit"
               className="text-xs font-medium text-muted underline hover:text-foreground"

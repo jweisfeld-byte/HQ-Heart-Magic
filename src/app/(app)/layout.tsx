@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { SignOutButton } from "@/components/SignOutButton";
-import { getOrganizationSettings } from "@/lib/settings/queries";
+import { getOrganizationSettings, getUserAppearanceSettings } from "@/lib/settings/queries";
 
 export default async function AppLayout({
   children,
@@ -18,11 +18,16 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Rainbow border glow is on by default until Jacob turns it off in
-  // Settings > Appearance — defaults to true if settings aren't set up
-  // yet, matching the effect's original always-on behavior.
-  const org = await getOrganizationSettings();
-  const glowEnabled = org ? org.rainbow_glow_enabled : true;
+  // Rainbow border glow is personal to whoever is logged in (Jacob's
+  // ask) — read from the current user's own appearance row, defaulting
+  // to on (matching the effect's original always-on behavior) if it's
+  // never been set. Team Calendar link stays org-wide since it's a
+  // genuinely shared resource.
+  const [org, userAppearance] = await Promise.all([
+    getOrganizationSettings(),
+    user.email ? getUserAppearanceSettings(user.email) : Promise.resolve(null),
+  ]);
+  const glowEnabled = userAppearance ? userAppearance.rainbow_glow_enabled : true;
   const teamCalendarUrl = org?.team_calendar_url ?? null;
 
   return (

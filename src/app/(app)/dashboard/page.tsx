@@ -9,7 +9,7 @@ import {
 import { getQuoteOfTheDay } from "@/lib/quotes";
 import { getTasks, getTasksDueToday } from "@/lib/tasks/queries";
 import { TasksPreviewCard } from "@/components/dashboard/TasksPreviewCard";
-import { getOrganizationSettings, listWorkspaceUsers } from "@/lib/settings/queries";
+import { getUserAppearanceSettings, listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects } from "@/lib/projects/queries";
 import { nameFromEmail } from "@/lib/format";
 import { getPersonRecommendation, type PersonConfig } from "@/lib/recommendations/service";
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
     salesLast30Days,
     tasksDueToday,
     allTasks,
-    org,
+    userAppearance,
     users,
     allProjects,
   ] = await Promise.all([
@@ -122,14 +122,15 @@ export default async function DashboardPage() {
     getSalesLast30Days(),
     getTasksDueToday(),
     getTasks(),
-    getOrganizationSettings(),
+    user?.email ? getUserAppearanceSettings(user.email) : Promise.resolve(null),
     listWorkspaceUsers(),
     getProjects(),
   ]);
 
-  // Jacob's own upload (Settings > Appearance) wins over the default
-  // mountain photo once he's set one.
-  const backgroundUrl = org?.dashboard_background_url || "/dashboard-mountain.jpg";
+  // The logged-in person's own upload (Settings > Appearance) wins over
+  // the default mountain photo once they've set one — personal to
+  // whoever is viewing, not shared across everybody's HQ (Jacob's ask).
+  const backgroundUrl = userAppearance?.dashboard_background_url || "/dashboard-mountain.jpg";
 
   // Today's revenue-focus recommendation per person (Jacob's ask) — one
   // Claude call per person, cached per day (see getPersonRecommendation),
