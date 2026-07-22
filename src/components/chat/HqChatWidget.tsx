@@ -92,7 +92,18 @@ export function HqChatWidget({
   );
 
   const panel = open && (
-    <div className="fixed bottom-24 right-5 z-50 flex h-[32rem] w-96 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
+    // Outer div carries ONLY the fixed positioning — no border/border-border
+    // classes here. The app's global .border-border rule (used for the
+    // rainbow-glow effect) sets `position: relative`, which — when applied
+    // to the *same* element as `fixed` — silently wins the cascade and
+    // breaks the fixed positioning outright. That's what happened here
+    // originally: the bordered panel box also carried `fixed`, so the glow
+    // rule overrode it and the panel rendered inline in the document flow
+    // instead of pinned to the viewport. Splitting the bordered visual box
+    // into its own inner div keeps `fixed` on an element with no border
+    // classes, sidestepping the collision entirely.
+    <div className="fixed bottom-24 right-5 z-50">
+      <div className="flex h-[32rem] w-96 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
           <p className="font-display text-sm font-semibold text-foreground">
@@ -160,6 +171,7 @@ export function HqChatWidget({
         >
           Send
         </button>
+      </div>
       </div>
     </div>
   );
