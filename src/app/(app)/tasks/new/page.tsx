@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createTaskAction } from "@/app/(app)/tasks/actions";
+import { CreateTaskSubmitButton } from "@/components/tasks/CreateTaskSubmitButton";
 import { STATUSES, STATUS_LABELS, RECURRENCES, RECURRENCE_LABELS } from "@/lib/tasks/queries";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects } from "@/lib/projects/queries";
@@ -178,12 +179,7 @@ export default async function NewTaskPage({
         </div>
 
         <div className="mt-2 flex gap-3">
-          <button
-            type="submit"
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-          >
-            Create task
-          </button>
+          <CreateTaskSubmitButton />
           <Link
             href="/tasks"
             className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/5"
