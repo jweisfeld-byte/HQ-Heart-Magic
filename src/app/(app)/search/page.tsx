@@ -95,8 +95,14 @@ export default async function SearchPage({
                 <p className="text-sm text-muted">
                   Found matching entries below, but couldn&apos;t generate a
                   summary —{" "}
-                  <code className="text-xs">ANTHROPIC_API_KEY</code> isn&apos;t
-                  configured yet.
+                  {process.env.ANTHROPIC_API_KEY ? (
+                    "hit a snag reaching Claude just now, try searching again in a moment."
+                  ) : (
+                    <>
+                      <code className="text-xs">ANTHROPIC_API_KEY</code>{" "}
+                      isn&apos;t configured yet.
+                    </>
+                  )}
                 </p>
               )}
 

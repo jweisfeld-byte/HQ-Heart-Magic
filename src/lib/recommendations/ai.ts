@@ -76,7 +76,8 @@ export async function generateRevenueRecommendation(
 
     const textBlock = response.content.find((block) => block.type === "text");
     return textBlock && "text" in textBlock ? textBlock.text : null;
-  } catch {
+  } catch (err) {
+    console.error("generateRevenueRecommendation: Claude API call failed", err);
     return null;
   }
 }

@@ -387,7 +387,9 @@ export default async function DashboardPage() {
                 }
               >
                 {recommendation ??
-                  "Waiting on an ANTHROPIC_API_KEY in Vercel to power this — see Settings."}
+                  (process.env.ANTHROPIC_API_KEY
+                    ? "Couldn't generate this just now — hit a snag reaching Claude, check back in a bit."
+                    : "Waiting on an ANTHROPIC_API_KEY in Vercel to power this — see Settings.")}
               </p>
             </div>
           );

@@ -55,7 +55,12 @@ export async function generateChatReply(
 
     const textBlock = response.content.find((block) => block.type === "text");
     return textBlock && "text" in textBlock ? textBlock.text : null;
-  } catch {
+  } catch (err) {
+    // Logged (not just swallowed) so a real Claude API failure (rate
+    // limit, transient network error, etc.) shows up in Vercel's runtime
+    // logs instead of looking identical to "no API key configured" —
+    // those are different problems with different fixes.
+    console.error("generateChatReply: Claude API call failed", err);
     return null;
   }
 }

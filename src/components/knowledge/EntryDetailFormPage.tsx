@@ -27,18 +27,26 @@ function hrefForField(type: FieldSchemaField["type"], value: string) {
   return value;
 }
 
+function extOf(label: string): string {
+  return label.split(".").pop()?.toLowerCase() ?? "";
+}
+
+const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "heic"];
+
 // Picks a representative icon for a linked document's preview tile —
 // by file extension first (a .pdf/.docx/.png etc. in the label tells
 // us more than the reference's provenance does), falling back to a
 // generic icon per target_type (upload/drive_file/url) only when the
-// label has no recognizable extension.
+// label has no recognizable extension. Actual PDF/image thumbnails
+// (rendered inline below) take priority over this — this is the
+// fallback icon for everything else.
 function iconForReference(label: string, targetType: string): string {
-  const ext = label.split(".").pop()?.toLowerCase() ?? "";
-  if (["pdf"].includes(ext)) return "📕";
+  const ext = extOf(label);
+  if (ext === "pdf") return "📕";
   if (["doc", "docx"].includes(ext)) return "📘";
   if (["xls", "xlsx", "csv"].includes(ext)) return "📗";
   if (["ppt", "pptx", "key"].includes(ext)) return "📙";
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg", "heic"].includes(ext)) return "🖼️";
+  if (IMAGE_EXTS.includes(ext)) return "🖼️";
   if (["mp4", "mov", "avi", "webm"].includes(ext)) return "🎬";
   if (["mp3", "wav", "m4a"].includes(ext)) return "🎵";
   if (["zip", "rar", "7z"].includes(ext)) return "🗜️";
@@ -321,23 +329,56 @@ export async function EntryDetailFormPage({
             Linked documents
           </p>
           <div className="mt-3 flex flex-wrap gap-3">
-            {references.map((r) => (
-              <a
-                key={r.id}
-                href={r.url ?? "#"}
-                target="_blank"
-                rel="noreferrer"
-                title={r.label}
-                className="group flex w-36 flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 text-center transition hover:border-accent hover:bg-accent/5"
-              >
-                <span className="text-4xl" aria-hidden>
-                  {iconForReference(r.label, r.target_type)}
-                </span>
-                <span className="line-clamp-2 text-xs font-medium text-foreground group-hover:text-accent">
-                  {r.label}
-                </span>
-              </a>
-            ))}
+            {references.map((r) => {
+              const ext = extOf(r.label);
+              const isPdf = ext === "pdf";
+              const isImage = IMAGE_EXTS.includes(ext);
+              return (
+                <a
+                  key={r.id}
+                  href={r.url ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={r.label}
+                  // Portrait (taller-than-wide) tile, like a document
+                  // page, rather than the landscape box this started
+                  // as (Jacob's ask).
+                  className="group flex w-32 flex-col items-center gap-2 rounded-xl border border-border bg-background p-3 text-center transition hover:border-accent hover:bg-accent/5"
+                >
+                  <span className="flex h-44 w-full items-center justify-center overflow-hidden rounded-lg bg-background/60">
+                    {isPdf && r.url ? (
+                      // Real first-page preview via the browser's own
+                      // PDF renderer, scaled way down to thumbnail
+                      // size and clipped — no thumbnail-generation
+                      // service needed. Purely decorative (the visible
+                      // filename label is what's actually announced),
+                      // so it's hidden from assistive tech and can't
+                      // steal focus/clicks from the surrounding link.
+                      <iframe
+                        src={`${r.url}#toolbar=0&navpanes=0&view=FitH`}
+                        className="pointer-events-none h-[920px] w-[720px] origin-top-left scale-[0.153]"
+                        tabIndex={-1}
+                        aria-hidden
+                      />
+                    ) : isImage && r.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={r.url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-6xl" aria-hidden>
+                        {iconForReference(r.label, r.target_type)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="line-clamp-2 w-full min-w-0 break-words text-xs font-medium text-foreground group-hover:text-accent">
+                    {r.label}
+                  </span>
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

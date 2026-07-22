@@ -31,8 +31,18 @@ export async function POST(request: NextRequest) {
   const reply = await generateChatReply(history, snapshot, message);
 
   if (!reply) {
+    // generateChatReply returns null both when there's no API key at all
+    // and when a real Claude API call failed (rate limit, transient
+    // network error, etc.) — those are different problems, so tell them
+    // apart here instead of always blaming a missing key (the actual
+    // error, if any, is logged server-side in generateChatReply).
+    const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY isn't configured yet — see Settings." },
+      {
+        error: hasKey
+          ? "Had trouble reaching Claude just now — try again in a moment."
+          : "ANTHROPIC_API_KEY isn't configured yet — see Settings.",
+      },
       { status: 400 },
     );
   }
