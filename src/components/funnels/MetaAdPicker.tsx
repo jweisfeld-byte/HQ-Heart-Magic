@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Manual Meta ad picker for one funnel format (Jacob confirmed manual
@@ -128,11 +129,12 @@ export function MetaAdPicker({
         </button>
       )}
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setOpen(false)}
-        >
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            onClick={() => setOpen(false)}
+          >
           <div
             className="flex max-h-[80vh] w-full max-w-md flex-col rounded-xl bg-surface p-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
@@ -194,8 +196,9 @@ export function MetaAdPicker({
               )}
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </div>
   );
 }
