@@ -13,19 +13,22 @@ const MAX_EXTRACTED_CHARS = 20000;
  * Best-effort: any failure (fetch, parse, oversized file) returns null
  * rather than blocking the entry/reference save.
  *
- * IMPORTANT: pdf-parse is loaded via a dynamic import *inside* this
- * function, not a static top-of-file import. pdf-parse pulls in
- * pdfjs-dist internally, which references browser-only globals
- * (DOMMatrix) at module-evaluation time — a static import here broke
- * every route that transitively imports this file (which, via
- * knowledge/queries.ts, is nearly every Knowledge/Marketing/Creative/
- * Creators/Analytics/Experiments page) with
- * "ReferenceError: DOMMatrix is not defined", since Next.js evaluates
- * that module graph on every request to those routes even when this
- * function is never called. A dynamic import means pdf-parse is only
- * ever loaded when this function actually runs (saving a PDF
- * reference), and any failure to load/parse it is caught below rather
- * than crashing the page.
+ * IMPORTANT: uses `unpdf` instead of `pdf-parse`. pdf-parse pulls in
+ * pdfjs-dist's Node build, which references browser-only globals
+ * (DOMMatrix/ImageData/Path2D) and only works if a native canvas
+ * package is present in the deployed serverless function — Vercel's
+ * build tracing doesn't reliably include that native binary even when
+ * explicitly installed and marked as a serverExternalPackage, so every
+ * extraction attempt threw "ReferenceError: DOMMatrix is not defined"
+ * in production despite working locally. unpdf ships a purpose-built
+ * serverless bundle of PDF.js with zero native dependencies — designed
+ * exactly for this (Cloudflare Workers, Vercel, etc.) — so there's
+ * nothing for the build tracer to drop.
+ *
+ * Still dynamically imported (not a static top-of-file import) so this
+ * module is only loaded when a PDF reference is actually saved, not on
+ * every request to every route that transitively imports this file via
+ * knowledge/queries.ts.
  */
 export async function extractPdfTextFromUrl(url: string): Promise<string | null> {
   try {
@@ -35,26 +38,23 @@ export async function extractPdfTextFromUrl(url: string): Promise<string | null>
     const contentLength = Number(res.headers.get("content-length") ?? "0");
     if (contentLength > MAX_EXTRACT_INPUT_BYTES) return null;
 
-    const buf = Buffer.from(await res.arrayBuffer());
+    const buf = new Uint8Array(await res.arrayBuffer());
     if (buf.byteLength > MAX_EXTRACT_INPUT_BYTES) return null;
 
-    const { PDFParse } = await import("pdf-parse");
-    const parser = new PDFParse({ data: buf });
-    const result = await parser.getText();
-    await parser.destroy?.();
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(buf);
+    const { text } = await extractText(pdf, { mergePages: true });
 
-    const text = result.text?.trim();
-    if (!text) {
-      console.error("extractPdfTextFromUrl: pdf-parse returned no text for", url);
+    const trimmed = text?.trim();
+    if (!trimmed) {
+      console.error("extractPdfTextFromUrl: unpdf returned no text for", url);
       return null;
     }
 
-    return text.length > MAX_EXTRACTED_CHARS ? text.slice(0, MAX_EXTRACTED_CHARS) : text;
+    return trimmed.length > MAX_EXTRACTED_CHARS ? trimmed.slice(0, MAX_EXTRACTED_CHARS) : trimmed;
   } catch (err) {
-    // Logged so we can actually see why extraction failed (e.g.
-    // pdfjs-dist's missing canvas/DOMMatrix polyfills breaking text
-    // positioning in this serverless environment) instead of it just
-    // silently degrading to "no extracted text" with no trace.
+    // Logged so we can actually see why extraction failed instead of it
+    // just silently degrading to "no extracted text" with no trace.
     console.error("extractPdfTextFromUrl: failed for", url, err);
     return null;
   }
