@@ -59,6 +59,12 @@ export type Reference = {
   drive_file_id: string | null;
   storage_path: string | null;
   label: string;
+  // Text pulled out of an uploaded PDF at save time (see
+  // setReferencesForEntry + extractPdfTextFromUrl) so AI Search and the
+  // HQ Assistant can actually answer questions about what's inside the
+  // document, not just its filename. Null for non-PDF / non-upload
+  // references, or if extraction failed/was skipped (oversized file).
+  extracted_text: string | null;
   created_at: string;
 };
 

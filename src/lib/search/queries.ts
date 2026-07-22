@@ -41,11 +41,48 @@ function extractKeywords(query: string): string[] {
   );
 }
 
+type EntryRow = {
+  id: string;
+  title: string;
+  body: string;
+  library: { key: string; name: string; group_key: string } | null;
+};
+
+// Bulk-fetches extracted PDF text (see reference.extracted_text,
+// populated by setReferencesForEntry/extractPdfTextFromUrl) for a set of
+// entry ids, keyed by entry id, so a linked document's actual content —
+// not just its filename — counts toward both search matching and what
+// gets shown to Claude. One query regardless of how many entries.
+async function getExtractedTextByEntryId(
+  supabase: ReturnType<typeof createAdminClient>,
+  entryIds: string[],
+): Promise<Record<string, { label: string; text: string }[]>> {
+  if (entryIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("reference")
+    .select("entry_id, label, extracted_text")
+    .in("entry_id", entryIds)
+    .not("extracted_text", "is", null);
+
+  if (error || !data) return {};
+
+  const map: Record<string, { label: string; text: string }[]> = {};
+  for (const row of data as { entry_id: string; label: string; extracted_text: string }[]) {
+    if (!row.extracted_text) continue;
+    (map[row.entry_id] ??= []).push({ label: row.label, text: row.extracted_text });
+  }
+  return map;
+}
+
 /**
  * Plain keyword search (no embeddings/semantic search yet — AI Search v1
  * doc, Section 3 flags that as future work) across every entry in the
- * generic Content Module engine. Extracts keywords from a natural-language
- * question, matches any of them against title/body, then ranks results in
+ * generic Content Module engine, PLUS the extracted text of any linked
+ * PDF documents (Jacob's ask: the assistant should be able to read what's
+ * actually inside a linked document, not just match its filename).
+ * Extracts keywords from a natural-language question, matches any of
+ * them against title/body/attached-document text, then ranks results in
  * JS by how many distinct keywords each entry actually contains.
  */
 export async function searchEntries(
@@ -57,32 +94,64 @@ export async function searchEntries(
 
   try {
     const supabase = createAdminClient();
-    const orFilter = keywords
+    const entrySelect = "id, title, body, library:library_id(key, name, group_key)";
+
+    const titleBodyFilter = keywords
       .flatMap((k) => [`title.ilike.%${k}%`, `body.ilike.%${k}%`])
       .join(",");
 
-    const { data, error } = await supabase
+    const { data: titleBodyRows, error: titleBodyError } = await supabase
       .from("entry")
-      .select("id, title, body, library:library_id(key, name, group_key)")
+      .select(entrySelect)
       .neq("status", "archived")
-      .or(orFilter)
+      .or(titleBodyFilter)
       .limit(50);
 
-    if (error) return null;
+    if (titleBodyError) return null;
 
-    type Row = {
-      id: string;
-      title: string;
-      body: string;
-      library: { key: string; name: string; group_key: string } | null;
-    };
+    // Second pass: any entry whose linked PDF text matches a keyword,
+    // even if its own title/body didn't — otherwise a document's actual
+    // content would be invisible to search entirely.
+    const extractedFilter = keywords
+      .map((k) => `extracted_text.ilike.%${k}%`)
+      .join(",");
+    const { data: matchedRefs } = await supabase
+      .from("reference")
+      .select("entry_id")
+      .not("extracted_text", "is", null)
+      .or(extractedFilter)
+      .limit(50);
 
-    const rows = (data ?? []) as unknown as Row[];
+    const rows = ((titleBodyRows ?? []) as unknown as EntryRow[]).filter((r) => r.library);
+    const seenIds = new Set(rows.map((r) => r.id));
+    const extraIds = Array.from(
+      new Set(
+        ((matchedRefs ?? []) as { entry_id: string }[])
+          .map((r) => r.entry_id)
+          .filter((id) => !seenIds.has(id)),
+      ),
+    );
+
+    if (extraIds.length > 0) {
+      const { data: extraRows } = await supabase
+        .from("entry")
+        .select(entrySelect)
+        .neq("status", "archived")
+        .in("id", extraIds);
+      for (const r of ((extraRows ?? []) as unknown as EntryRow[]).filter((r) => r.library)) {
+        rows.push(r);
+      }
+    }
+
+    const extractedByEntryId = await getExtractedTextByEntryId(
+      supabase,
+      rows.map((r) => r.id),
+    );
 
     const scored = rows
-      .filter((r) => r.library)
       .map((r) => {
-        const haystack = `${r.title} ${r.body}`.toLowerCase();
+        const docText = (extractedByEntryId[r.id] ?? []).map((d) => d.text).join(" ");
+        const haystack = `${r.title} ${r.body} ${docText}`.toLowerCase();
         const score = keywords.reduce(
           (sum, k) => sum + (haystack.includes(k) ? 1 : 0),
           0,
@@ -93,14 +162,24 @@ export async function searchEntries(
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
-    const entries: SearchResultEntry[] = scored.map(({ row }) => ({
-      id: row.id,
-      title: row.title,
-      body: row.body,
-      libraryKey: row.library!.key,
-      libraryName: row.library!.name,
-      groupKey: row.library!.group_key,
-    }));
+    const entries: SearchResultEntry[] = scored.map(({ row }) => {
+      const docs = extractedByEntryId[row.id] ?? [];
+      const docLines = docs.map(
+        (d) => "[Attached document \"" + d.label + "\"]\n" + d.text,
+      );
+      const body = docs.length
+        ? (row.body + "\n\n" + docLines.join("\n\n")).trim()
+        : row.body;
+
+      return {
+        id: row.id,
+        title: row.title,
+        body,
+        libraryKey: row.library!.key,
+        libraryName: row.library!.name,
+        groupKey: row.library!.group_key,
+      };
+    });
 
     return { entries, keywords };
   } catch {

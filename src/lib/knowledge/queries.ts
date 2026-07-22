@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { extractPdfTextFromUrl } from "@/lib/uploads/pdfText";
 import type {
   Entry,
   EntryType,
@@ -183,20 +184,35 @@ export async function setReferencesForEntry(
 
   if (cleaned.length === 0) return;
 
-  await supabase.from("reference").insert(
-    cleaned.map((r) => ({
-      entry_id: entryId,
-      label: r.label,
-      url: r.url,
-      // Distinguishes a Drive Picker selection (Technical Architecture v1
-      // Section 6), a file uploaded straight into HQ's own Storage
-      // bucket, and a manually pasted URL — same table, different
-      // provenance.
-      target_type: r.storagePath ? "upload" : r.driveFileId ? "drive_file" : "url",
-      drive_file_id: r.driveFileId,
-      storage_path: r.storagePath,
-    })),
+  // Extract text for self-hosted PDF uploads only (see pdfText.ts) —
+  // Drive files aren't fetchable without the owner's OAuth token, and
+  // arbitrary pasted URLs aren't necessarily PDFs. Run in parallel since
+  // this is bounded to however many references one entry has (a
+  // handful), not a large batch.
+  const rows = await Promise.all(
+    cleaned.map(async (r) => {
+      const target_type = r.storagePath ? "upload" : r.driveFileId ? "drive_file" : "url";
+      let extracted_text: string | null = null;
+      if (target_type === "upload" && r.url.toLowerCase().endsWith(".pdf")) {
+        extracted_text = await extractPdfTextFromUrl(r.url);
+      }
+      return {
+        entry_id: entryId,
+        label: r.label,
+        url: r.url,
+        // Distinguishes a Drive Picker selection (Technical Architecture v1
+        // Section 6), a file uploaded straight into HQ's own Storage
+        // bucket, and a manually pasted URL — same table, different
+        // provenance.
+        target_type,
+        drive_file_id: r.driveFileId,
+        storage_path: r.storagePath,
+        extracted_text,
+      };
+    }),
   );
+
+  await supabase.from("reference").insert(rows);
 }
 
 export async function createEntry(input: {
