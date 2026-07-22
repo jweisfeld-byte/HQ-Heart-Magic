@@ -3,16 +3,18 @@ import { createTaskAction } from "@/app/(app)/tasks/actions";
 import { STATUSES, STATUS_LABELS, RECURRENCES, RECURRENCE_LABELS } from "@/lib/tasks/queries";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects } from "@/lib/projects/queries";
+import { getEvents } from "@/lib/events/queries";
 
 export default async function NewTaskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<{ project?: string; event?: string }>;
 }) {
-  const { project: preselectedProject } = await searchParams;
-  const [users, projects] = await Promise.all([
+  const { project: preselectedProject, event: preselectedEvent } = await searchParams;
+  const [users, projects, events] = await Promise.all([
     listWorkspaceUsers(),
     getProjects(),
+    getEvents(),
   ]);
 
   return (
@@ -125,6 +127,24 @@ export default async function NewTaskPage({
               className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">
+            Event
+          </label>
+          <select
+            name="eventId"
+            defaultValue={preselectedEvent ?? ""}
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+          >
+            <option value="">No event</option>
+            {(events ?? []).map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.title} ({e.event_date})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

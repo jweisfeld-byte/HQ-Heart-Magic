@@ -53,6 +53,7 @@ export async function createTaskAction(formData: FormData) {
     dueDate: String(formData.get("dueDate") ?? "").trim() || null,
     projectId: String(formData.get("projectId") ?? "").trim() || null,
     projectPercent: parsePercent(String(formData.get("projectPercent") ?? "")),
+    eventId: String(formData.get("eventId") ?? "").trim() || null,
     recurrence: parseRecurrence(String(formData.get("recurrence") ?? "")),
     createdBy: user?.email ?? null,
   });
@@ -63,6 +64,7 @@ export async function createTaskAction(formData: FormData) {
 
   revalidatePath("/tasks");
   revalidatePath("/projects");
+  revalidatePath("/events");
   redirect(`/tasks/${result.id}`);
 }
 
@@ -83,6 +85,7 @@ export async function updateTaskAction(formData: FormData) {
     dueDate: String(formData.get("dueDate") ?? "").trim() || null,
     projectId: String(formData.get("projectId") ?? "").trim() || null,
     projectPercent: parsePercent(String(formData.get("projectPercent") ?? "")),
+    eventId: String(formData.get("eventId") ?? "").trim() || null,
     recurrence: parseRecurrence(String(formData.get("recurrence") ?? "")),
   });
 
@@ -93,6 +96,7 @@ export async function updateTaskAction(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
+  revalidatePath("/events");
   redirect(`/tasks/${id}`);
 }
 
@@ -113,6 +117,7 @@ export async function changeTaskRecurrenceAction(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
+  revalidatePath("/events");
 }
 
 export async function changeTaskAssigneeAction(formData: FormData) {
@@ -131,6 +136,7 @@ export async function changeTaskAssigneeAction(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
+  revalidatePath("/events");
 }
 
 export async function changeTaskDueDateAction(formData: FormData) {
@@ -149,6 +155,7 @@ export async function changeTaskDueDateAction(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
+  revalidatePath("/events");
 }
 
 export async function changeTaskStatusAction(formData: FormData) {
@@ -167,4 +174,5 @@ export async function changeTaskStatusAction(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
+  revalidatePath("/events");
 }

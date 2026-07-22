@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { getEvents, type Event } from "@/lib/events/queries";
+import { getTasksForEvent } from "@/lib/tasks/queries";
+import { listWorkspaceUsers } from "@/lib/settings/queries";
+import { TaskBoard } from "@/components/tasks/TaskBoard";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
@@ -84,6 +87,20 @@ export default async function EventsPage({
   const prev = addMonths(year, month, -1);
   const next = addMonths(year, month, 1);
   const todayStr = ymd(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+  // Events visible in the currently-viewed month grid, chronological —
+  // used for the "Tasks for events" section below the calendar
+  // (Jacob's ask: "below the calendar in events tab, make a tasks for
+  // event section").
+  const monthPrefix = `${year}-${pad(month)}`;
+  const monthEvents = events
+    .filter((e) => e.event_date.startsWith(monthPrefix))
+    .sort((a, b) => a.event_date.localeCompare(b.event_date));
+
+  const [users, eventTaskLists] = await Promise.all([
+    listWorkspaceUsers(),
+    Promise.all(monthEvents.map((e) => getTasksForEvent(e.id))),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -199,6 +216,51 @@ export default async function EventsPage({
           .
         </div>
       )}
+
+      <div className="mt-10">
+        <h2 className="font-display text-xl font-semibold text-foreground">
+          Tasks for events
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          What needs to happen for each event this month.
+        </p>
+
+        {monthEvents.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-border bg-surface p-8 text-center text-sm text-muted">
+            No events in {MONTH_NAMES[month - 1]} {year}.
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-col gap-8">
+            {monthEvents.map((e, i) => {
+              const tasks = eventTaskLists[i] ?? [];
+              return (
+                <div key={e.id}>
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/events/${e.id}`}
+                      className="font-display text-base font-semibold text-foreground hover:text-accent"
+                    >
+                      {e.title}
+                    </Link>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted">{e.event_date}</span>
+                      <Link
+                        href={`/tasks/new?event=${e.id}`}
+                        className="rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/5"
+                      >
+                        + Add task
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <TaskBoard tasks={tasks} users={users ?? []} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

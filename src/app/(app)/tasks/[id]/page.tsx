@@ -10,6 +10,7 @@ import {
 import { updateTaskAction } from "@/app/(app)/tasks/actions";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects } from "@/lib/projects/queries";
+import { getEvents } from "@/lib/events/queries";
 
 export default async function TaskDetailPage({
   params,
@@ -21,9 +22,10 @@ export default async function TaskDetailPage({
   const task = await getTaskById(id);
   if (!task) notFound();
 
-  const [users, projects] = await Promise.all([
+  const [users, projects, events] = await Promise.all([
     listWorkspaceUsers(),
     getProjects(),
+    getEvents(),
   ]);
 
   return (
@@ -140,6 +142,24 @@ export default async function TaskDetailPage({
               className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground">
+            Event
+          </label>
+          <select
+            name="eventId"
+            defaultValue={task.event_id ?? ""}
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+          >
+            <option value="">No event</option>
+            {(events ?? []).map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.title} ({e.event_date})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

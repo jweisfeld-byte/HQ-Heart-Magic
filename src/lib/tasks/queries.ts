@@ -53,6 +53,7 @@ export type Task = {
   due_date: string | null;
   project_id: string | null;
   project_percent: number | null;
+  event_id: string | null;
   recurrence: Recurrence | null;
   created_by: string | null;
   created_at: string;
@@ -98,6 +99,7 @@ export async function createTask(input: {
   dueDate: string | null;
   projectId: string | null;
   projectPercent: number | null;
+  eventId: string | null;
   recurrence: Recurrence | null;
   createdBy: string | null;
 }): Promise<{ id: string } | { error: string }> {
@@ -113,6 +115,7 @@ export async function createTask(input: {
         due_date: input.dueDate,
         project_id: input.projectId,
         project_percent: input.projectId ? input.projectPercent : null,
+        event_id: input.eventId,
         recurrence: input.recurrence,
         created_by: input.createdBy,
       })
@@ -138,6 +141,7 @@ export async function updateTask(
     dueDate: string | null;
     projectId: string | null;
     projectPercent: number | null;
+    eventId: string | null;
     recurrence: Recurrence | null;
   },
 ): Promise<{ ok: true } | { error: string }> {
@@ -153,6 +157,7 @@ export async function updateTask(
         due_date: input.dueDate,
         project_id: input.projectId,
         project_percent: input.projectId ? input.projectPercent : null,
+        event_id: input.eventId,
         recurrence: input.recurrence,
         updated_at: new Date().toISOString(),
       })
@@ -275,6 +280,39 @@ export async function setTaskDueDate(
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Unknown error." };
+  }
+}
+
+export async function getTasksForEvent(eventId: string): Promise<Task[] | null> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("task")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("created_at", { ascending: true });
+
+    if (error) return null;
+    return data as Task[];
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllEventTasks(): Promise<
+  Pick<Task, "id" | "event_id" | "title" | "status">[] | null
+> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("task")
+      .select("id, event_id, title, status")
+      .not("event_id", "is", null);
+
+    if (error) return null;
+    return data as Pick<Task, "id" | "event_id" | "title" | "status">[];
+  } catch {
+    return null;
   }
 }
 
