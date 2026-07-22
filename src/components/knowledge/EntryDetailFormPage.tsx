@@ -27,6 +27,26 @@ function hrefForField(type: FieldSchemaField["type"], value: string) {
   return value;
 }
 
+// Picks a representative icon for a linked document's preview tile —
+// by file extension first (a .pdf/.docx/.png etc. in the label tells
+// us more than the reference's provenance does), falling back to a
+// generic icon per target_type (upload/drive_file/url) only when the
+// label has no recognizable extension.
+function iconForReference(label: string, targetType: string): string {
+  const ext = label.split(".").pop()?.toLowerCase() ?? "";
+  if (["pdf"].includes(ext)) return "📕";
+  if (["doc", "docx"].includes(ext)) return "📘";
+  if (["xls", "xlsx", "csv"].includes(ext)) return "📗";
+  if (["ppt", "pptx", "key"].includes(ext)) return "📙";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg", "heic"].includes(ext)) return "🖼️";
+  if (["mp4", "mov", "avi", "webm"].includes(ext)) return "🎬";
+  if (["mp3", "wav", "m4a"].includes(ext)) return "🎵";
+  if (["zip", "rar", "7z"].includes(ext)) return "🗜️";
+  if (targetType === "upload") return "📁";
+  if (targetType === "drive_file") return "📄";
+  return "🔗";
+}
+
 // Shared Module Detail View (Template B). Read mode by default; edit=true
 // shows the structured-field-free MVP edit form (title/status/body/tags).
 // Full block editor, version-history UI, and typed relationships are
@@ -300,25 +320,25 @@ export async function EntryDetailFormPage({
           <p className="text-xs font-medium uppercase tracking-wide text-muted">
             Linked documents
           </p>
-          <ul className="mt-2 flex flex-col gap-1">
+          <div className="mt-3 flex flex-wrap gap-3">
             {references.map((r) => (
-              <li key={r.id}>
-                <a
-                  href={r.url ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm text-accent hover:underline"
-                >
-                  {r.target_type === "upload"
-                    ? "📁 "
-                    : r.target_type === "drive_file"
-                      ? "📄 "
-                      : "🔗 "}
-                  {r.label} ↗
-                </a>
-              </li>
+              <a
+                key={r.id}
+                href={r.url ?? "#"}
+                target="_blank"
+                rel="noreferrer"
+                title={r.label}
+                className="group flex w-36 flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 text-center transition hover:border-accent hover:bg-accent/5"
+              >
+                <span className="text-4xl" aria-hidden>
+                  {iconForReference(r.label, r.target_type)}
+                </span>
+                <span className="line-clamp-2 text-xs font-medium text-foreground group-hover:text-accent">
+                  {r.label}
+                </span>
+              </a>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
