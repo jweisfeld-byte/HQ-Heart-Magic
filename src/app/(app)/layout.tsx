@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getOrganizationSettings, getUserAppearanceSettings } from "@/lib/settings/queries";
+import { getChatHistory } from "@/lib/chat/queries";
+import { HqChatWidget } from "@/components/chat/HqChatWidget";
 
 export default async function AppLayout({
   children,
@@ -23,9 +25,10 @@ export default async function AppLayout({
   // to on (matching the effect's original always-on behavior) if it's
   // never been set. Team Calendar link stays org-wide since it's a
   // genuinely shared resource.
-  const [org, userAppearance] = await Promise.all([
+  const [org, userAppearance, chatHistory] = await Promise.all([
     getOrganizationSettings(),
     user.email ? getUserAppearanceSettings(user.email) : Promise.resolve(null),
+    user.email ? getChatHistory(user.email) : Promise.resolve([]),
   ]);
   const glowEnabled = userAppearance ? userAppearance.rainbow_glow_enabled : true;
   const teamCalendarUrl = org?.team_calendar_url ?? null;
@@ -60,6 +63,9 @@ export default async function AppLayout({
         </header>
         <main className="flex-1 bg-background px-8 py-8">{children}</main>
       </div>
+      {/* Floating HQ Assistant, available on every page (Jacob's ask) —
+          read-only, grounded in everything across HQ. */}
+      <HqChatWidget initialMessages={chatHistory} />
     </div>
   );
 }
