@@ -217,6 +217,7 @@ export type MetaAccountInsightsSummary = {
 // doesn't need a second call to listRecentAds() either.
 export async function getAdAccountInsightsSummary(
   limit = 15,
+  datePreset: "last_7d" | "last_30d" = "last_30d",
 ): Promise<MetaAccountInsightsSummary | { error: string } | null> {
   const connection = await getMetaConnection();
   if (!connection) return null;
@@ -225,7 +226,7 @@ export async function getAdAccountInsightsSummary(
     const url = new URL(`${GRAPH_API_BASE}/act_${connection.ad_account_id}/insights`);
     url.searchParams.set("level", "ad");
     url.searchParams.set("fields", "ad_id,ad_name,spend,impressions,clicks,ctr");
-    url.searchParams.set("date_preset", "last_30d");
+    url.searchParams.set("date_preset", datePreset);
     url.searchParams.set("limit", "200");
     url.searchParams.set("access_token", connection.access_token);
 
@@ -272,7 +273,7 @@ export async function getAdAccountInsightsSummary(
 
     const topAds = [...rows].sort((a, b) => b.spend - a.spend).slice(0, limit);
 
-    return { ads: topAds, totals, datePreset: "last_30d" };
+    return { ads: topAds, totals, datePreset };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Couldn't reach Meta — try again.",

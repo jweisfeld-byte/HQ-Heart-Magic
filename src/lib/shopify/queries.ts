@@ -301,20 +301,23 @@ export type Last30DaysSales = {
   currency: string;
 };
 
-function last30DaysRangeUTC() {
+function lastNDaysRangeUTC(days: number) {
   const now = new Date();
-  const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   return { start: start.toISOString(), end: now.toISOString() };
 }
 
 /**
- * Total sales over the trailing 30 days (rolling window, not calendar
- * month) across every channel. Paginates (unlike the other tiles here)
- * since 30 days can plausibly exceed 250 orders, capped at 10 pages
- * (2,500 orders) as a sane upper bound.
+ * Total sales over a trailing N-day window (rolling, not calendar-
+ * aligned) across every channel. Paginates (unlike the other tiles
+ * here) since a wide window can plausibly exceed 250 orders, capped at
+ * 10 pages (2,500 orders) as a sane upper bound. getSalesLast30Days()
+ * below is the original 30-day shape the dashboard already uses;
+ * getSalesLastNDays() is the general form the Discord weekly digest
+ * uses with a 7-day window.
  */
-export async function getSalesLast30Days(): Promise<Last30DaysSales | null> {
-  const { start, end } = last30DaysRangeUTC();
+export async function getSalesLastNDays(days: number): Promise<Last30DaysSales | null> {
+  const { start, end } = lastNDaysRangeUTC(days);
   const queryString = `created_at:>='${start}' AND created_at:<='${end}'`;
 
   const query = `
@@ -370,4 +373,8 @@ export async function getSalesLast30Days(): Promise<Last30DaysSales | null> {
   }
 
   return { orderCount, totalRevenue, currency };
+}
+
+export async function getSalesLast30Days(): Promise<Last30DaysSales | null> {
+  return getSalesLastNDays(30);
 }

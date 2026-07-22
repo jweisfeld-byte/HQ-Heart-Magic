@@ -11,6 +11,7 @@ import {
   type UserRole,
 } from "@/lib/settings/queries";
 import { saveMetaConnection, disconnectMeta } from "@/lib/meta/queries";
+import { addDiscordWebhook, deleteDiscordWebhook, postToAllWebhooks } from "@/lib/discord/queries";
 
 // Appearance is personal to whoever is logged in (Jacob's ask) — every
 // appearance action reads the CURRENT user's own session rather than
@@ -144,5 +145,37 @@ export async function disconnectMetaAction() {
     return;
   }
 
+  revalidatePath("/settings/integrations");
+}
+
+
+export async function addDiscordWebhookAction(formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  const webhookUrl = String(formData.get("webhookUrl") ?? "").trim();
+
+  if (!label || !webhookUrl) {
+    return;
+  }
+
+  const result = await addDiscordWebhook(label, webhookUrl);
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath("/settings/integrations");
+}
+
+export async function deleteDiscordWebhookAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await deleteDiscordWebhook(id);
+  revalidatePath("/settings/integrations");
+}
+
+export async function sendTestDiscordMessageAction() {
+  await postToAllWebhooks(
+    "👋 Test message from Heart Magic HQ — if you're seeing this, the connection works.",
+  );
   revalidatePath("/settings/integrations");
 }

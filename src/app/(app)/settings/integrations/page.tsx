@@ -1,6 +1,13 @@
 import { getShopifyConnectionSummary } from "@/lib/settings/queries";
 import { getMetaConnectionSummary } from "@/lib/meta/queries";
-import { connectMetaAction, disconnectMetaAction } from "@/app/(app)/settings/actions";
+import { getDiscordWebhooks } from "@/lib/discord/queries";
+import {
+  connectMetaAction,
+  disconnectMetaAction,
+  addDiscordWebhookAction,
+  deleteDiscordWebhookAction,
+  sendTestDiscordMessageAction,
+} from "@/app/(app)/settings/actions";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -17,6 +24,7 @@ function formatDate(iso: string) {
 export default async function IntegrationsSettingsPage() {
   const shopify = await getShopifyConnectionSummary();
   const meta = await getMetaConnectionSummary();
+  const discordWebhooks = await getDiscordWebhooks();
 
   const integrations = [
     {
@@ -68,8 +76,11 @@ export default async function IntegrationsSettingsPage() {
       key: "discord",
       icon: "🎮",
       name: "Discord",
-      connected: false,
-      detail: "Not connected yet — no notification system exists to send to it.",
+      connected: discordWebhooks.length > 0,
+      detail:
+        discordWebhooks.length > 0
+          ? `${discordWebhooks.length} webhook${discordWebhooks.length === 1 ? "" : "s"} connected · weekly results post every Monday.`
+          : "Posts an automated weekly-results message (sales, conversion, top ads) to one or more Discord channels.",
       action: null,
     },
   ];
@@ -162,6 +173,81 @@ export default async function IntegrationsSettingsPage() {
                   </p>
                 </form>
               )}
+            </div>
+          )}
+
+          {i.key === "discord" && (
+            <div className="flex flex-col gap-3 border-t border-border pt-3">
+              {discordWebhooks.length > 0 && (
+                <ul className="flex flex-col gap-2">
+                  {discordWebhooks.map((w) => (
+                    <li
+                      key={w.id}
+                      className="flex items-center justify-between rounded-lg bg-background px-3 py-2 text-sm"
+                    >
+                      <span className="text-foreground">{w.label}</span>
+                      <form action={deleteDiscordWebhookAction}>
+                        <input type="hidden" name="id" value={w.id} />
+                        <button
+                          type="submit"
+                          className="text-xs font-medium text-muted underline hover:text-red-600"
+                        >
+                          Remove
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <form action={addDiscordWebhookAction} className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="text-xs font-medium text-foreground">
+                    Community name
+                  </label>
+                  <input
+                    name="label"
+                    required
+                    placeholder="e.g. Ambassadors"
+                    className="mt-1 w-48 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-foreground">
+                    Webhook URL
+                  </label>
+                  <input
+                    name="webhookUrl"
+                    required
+                    placeholder="https://discord.com/api/webhooks/..."
+                    className="mt-1 w-80 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+                >
+                  Add
+                </button>
+              </form>
+
+              {discordWebhooks.length > 0 && (
+                <form action={sendTestDiscordMessageAction}>
+                  <button
+                    type="submit"
+                    className="text-xs font-medium text-accent hover:underline"
+                  >
+                    Send test message to all connected channels
+                  </button>
+                </form>
+              )}
+
+              <p className="text-xs text-muted">
+                In Discord: open the channel&apos;s settings &gt; Integrations &gt;
+                Webhooks &gt; New Webhook &gt; Copy Webhook URL, then paste it
+                above. A weekly-results message posts automatically every
+                Monday to every webhook added here.
+              </p>
             </div>
           )}
         </div>
