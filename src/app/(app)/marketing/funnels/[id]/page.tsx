@@ -14,7 +14,8 @@ import {
   removeAssetFileAction,
   deleteAssetAction,
 } from "@/app/(app)/marketing/funnels/actions";
-import { FunnelTriangle, type FunnelTriangleStage } from "@/components/funnels/FunnelTriangle";
+import type { FunnelTriangleStage } from "@/components/funnels/FunnelTriangle";
+import { ExpandableFunnelTriangle } from "@/components/funnels/ExpandableFunnelTriangle";
 import { FunnelStageDriveAttach } from "@/components/funnels/FunnelStageDriveAttach";
 import { AutoSubmitField } from "@/components/funnels/AutoSubmitField";
 
@@ -88,8 +89,11 @@ export default async function FunnelDetailPage({
     const assets = assetsByStage[s.id] ?? [];
     return {
       ...s,
-      assetCount: assets.length,
-      filledAssetCount: assets.filter((a) => a.drive_file_id || a.file_url).length,
+      assets: assets.map((a) => ({
+        label: a.label,
+        hasFile: Boolean(a.drive_file_id || a.file_url),
+        fileLabel: a.file_label,
+      })),
     };
   });
 
@@ -116,7 +120,7 @@ export default async function FunnelDetailPage({
       </div>
 
       <div className="mt-8 flex justify-center rounded-xl border border-border bg-surface p-6">
-        <FunnelTriangle stages={triangleStages} />
+        <ExpandableFunnelTriangle stages={triangleStages} />
       </div>
 
       <div className="mt-8">

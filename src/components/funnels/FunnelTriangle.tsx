@@ -1,8 +1,7 @@
 import type { FunnelStage } from "@/lib/funnels/queries";
 
 export type FunnelTriangleStage = FunnelStage & {
-  assetCount: number;
-  filledAssetCount: number;
+  assets: { label: string; hasFile: boolean; fileLabel: string | null }[];
 };
 
 type Point = readonly [number, number];
@@ -10,6 +9,10 @@ type Point = readonly [number, number];
 function normalize([x, y]: Point): Point {
   const len = Math.hypot(x, y) || 1;
   return [x / len, y / len];
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 // Rounds every corner of a closed polygon by a fixed radius — same
@@ -50,11 +53,15 @@ const BAND_COLORS = [
 
 // A big triangle, wide end at top (top of funnel) narrowing to a tip
 // at the bottom (the conversion) — one horizontal band per stage, in
-// the order stages were added. Each band is colored in once it has a
-// Google Drive asset attached; empty stages render as a dashed, empty
-// band so it's obvious what still needs an asset built out. Bands are
-// sized by `size_percent` when set, otherwise split evenly, mirroring
-// how the Projects pyramid handles unset percentages.
+// the order stages were added. Each band is colored in once at least
+// one of its formats has a Google Drive asset attached; empty stages
+// render as a dashed, empty band. Bands are sized by `size_percent`
+// when set, otherwise split evenly. The label beside each band lists
+// every format built out for that stage plus the actual attached file
+// name (Jacob's ask) — label rows are stacked with their own vertical
+// layout (not tied 1:1 to the band's proportional height) so a stage
+// with many formats doesn't overlap its neighbors' labels; a leader
+// line still connects each label back to its band's actual midpoint.
 export function FunnelTriangle({
   stages,
   size = "large",
@@ -82,12 +89,46 @@ export function FunnelTriangle({
   const isSmall = size === "small";
   const apexX = isSmall ? 80 : 150;
   const baseHalfWidth = isSmall ? 70 : 130;
-  const apexY = isSmall ? 10 : 20;
-  const rowHeight = isSmall ? 16 : 26;
-  const height = Math.max(isSmall ? 100 : 160, n * rowHeight + (isSmall ? 20 : 40));
-  const baseY = height - (isSmall ? 10 : 20);
-  const labelAreaWidth = isSmall ? 0 : 220;
+  const labelAreaWidth = isSmall ? 0 : 230;
   const width = apexX + baseHalfWidth + labelAreaWidth;
+
+  const titleLineHeight = isSmall ? 12 : 15;
+  const bodyLineHeight = isSmall ? 10 : 13;
+  const blockGap = isSmall ? 8 : 12;
+  const topPad = isSmall ? 10 : 20;
+  const bottomPad = isSmall ? 10 : 20;
+
+  // Each stage's label block: its title line plus one line per format
+  // (or a single "No formats yet" line), sized to fit whatever content
+  // it actually has.
+  const labelBlocks = stages.map((stage) => {
+    const bodyLines =
+      stage.assets.length === 0
+        ? ["No formats yet"]
+        : stage.assets.map((a) =>
+            a.hasFile
+              ? `${a.label}: ${truncate(a.fileLabel ?? "Attached", 26)}`
+              : `${a.label} — no file yet`,
+          );
+    const blockHeight = titleLineHeight + bodyLines.length * bodyLineHeight;
+    return { bodyLines, blockHeight };
+  });
+
+  const labelLayout = labelBlocks.reduce<{ tops: number[]; cursor: number }>(
+    (acc, block) => {
+      const top = acc.cursor;
+      return { tops: [...acc.tops, top], cursor: acc.cursor + block.blockHeight + blockGap };
+    },
+    { tops: [], cursor: 0 },
+  );
+  const labelContentHeight = Math.max(0, labelLayout.cursor - blockGap);
+
+  const height = Math.max(
+    isSmall ? 100 : 160,
+    labelContentHeight + topPad + bottomPad,
+  );
+  const apexY = topPad;
+  const baseY = height - bottomPad;
 
   const widthAtFraction = (f: number) => f * baseHalfWidth * 2;
   const yAtFraction = (f: number) => apexY + f * (baseY - apexY);
@@ -125,9 +166,12 @@ export function FunnelTriangle({
     const midY = yAtFraction(midF);
     const rightEdge = apexX + widthAtFraction(midF) / 2;
     const color = BAND_COLORS[index % BAND_COLORS.length];
-    const hasFile = stage.filledAssetCount > 0;
+    const hasFile = stage.assets.some((a) => a.hasFile);
 
-    return { stage, path, midY, rightEdge, color, hasFile };
+    const labelTop = topPad + labelLayout.tops[index];
+    const { bodyLines } = labelBlocks[index];
+
+    return { stage, path, midY, rightEdge, color, hasFile, labelTop, bodyLines };
   });
 
   const clipId = `funnel-clip-${stages.map((s) => s.id).join("-") || "empty"}-${size}`;
@@ -144,7 +188,7 @@ export function FunnelTriangle({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className={isSmall ? "h-auto w-full max-w-[160px] text-foreground" : "h-auto w-full max-w-lg text-foreground"}
+      className="h-auto w-full text-foreground"
       role="img"
       aria-label={`Funnel with ${n} stage${n === 1 ? "" : "s"}`}
     >
@@ -170,29 +214,41 @@ export function FunnelTriangle({
       <path d={clipPath} fill="none" stroke="#57534e" strokeWidth={isSmall ? 1 : 1.5} />
 
       {!isSmall &&
-        bands.map(({ stage, midY, rightEdge }) => (
+        bands.map(({ stage, midY, rightEdge, labelTop, bodyLines }) => (
           <g key={stage.id}>
             <title>
-              {stage.name} — {stage.filledAssetCount} of {stage.assetCount} format
-              {stage.assetCount === 1 ? "" : "s"} attached
+              {stage.name}
               {stage.strategy ? ` — ${stage.strategy}` : ""}
             </title>
             <line
               x1={rightEdge + 2}
               y1={midY}
               x2={rightEdge + 16}
-              y2={midY}
+              y2={labelTop + titleLineHeight / 2}
               stroke="currentColor"
               strokeOpacity={0.4}
             />
-            <text x={rightEdge + 20} y={midY} dominantBaseline="middle" fontSize={11} fill="currentColor">
-              <tspan fontWeight={600}>{stage.name}</tspan>
-              <tspan dx={6} fillOpacity={0.75}>
-                {stage.assetCount === 0
-                  ? "No formats yet"
-                  : `${stage.filledAssetCount}/${stage.assetCount} format${stage.assetCount === 1 ? "" : "s"}`}
-              </tspan>
+            <text
+              x={rightEdge + 20}
+              y={labelTop + titleLineHeight - 3}
+              fontSize={12}
+              fontWeight={600}
+              fill="currentColor"
+            >
+              {stage.name}
             </text>
+            {bodyLines.map((line, li) => (
+              <text
+                key={li}
+                x={rightEdge + 20}
+                y={labelTop + titleLineHeight + (li + 1) * bodyLineHeight - 3}
+                fontSize={10}
+                fillOpacity={0.75}
+                fill="currentColor"
+              >
+                {line}
+              </text>
+            ))}
           </g>
         ))}
     </svg>
