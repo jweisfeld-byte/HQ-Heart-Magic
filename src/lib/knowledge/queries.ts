@@ -168,7 +168,7 @@ export async function getReferencesForEntry(
 export async function setReferencesForEntry(
   entryId: string,
   refs: { label: string; url: string; driveFileId?: string; storagePath?: string }[],
-): Promise<void> {
+): Promise<{ ok: true } | { error: string }> {
   const supabase = createAdminClient();
 
   const cleaned = refs
@@ -180,9 +180,12 @@ export async function setReferencesForEntry(
     }))
     .filter((r) => r.label && r.url);
 
-  await supabase.from("reference").delete().eq("entry_id", entryId);
-
-  if (cleaned.length === 0) return;
+  if (cleaned.length === 0) {
+    // Nothing to keep — safe to just clear the existing rows.
+    const { error } = await supabase.from("reference").delete().eq("entry_id", entryId);
+    if (error) return { error: error.message };
+    return { ok: true };
+  }
 
   // Extract text for self-hosted PDF uploads only (see pdfText.ts) —
   // Drive files aren't fetchable without the owner's OAuth token, and
@@ -212,7 +215,40 @@ export async function setReferencesForEntry(
     }),
   );
 
-  await supabase.from("reference").insert(rows);
+  // Record which rows already exist BEFORE inserting the new ones, so
+  // the delete below can target exactly those old ids — never rows
+  // that were just inserted. Insert-then-delete-old (rather than the
+  // previous delete-then-insert) means a failed insert leaves every
+  // existing linked document untouched instead of silently wiping them
+  // out. That mattered here specifically: an insert fails outright if
+  // reference.extracted_text doesn't exist yet (i.e.
+  // reference_extracted_text_schema.sql hasn't been run against this
+  // database), and nothing was checking that failure before.
+  const { data: existing, error: existingError } = await supabase
+    .from("reference")
+    .select("id")
+    .eq("entry_id", entryId);
+
+  if (existingError) return { error: existingError.message };
+  const oldIds = (existing ?? []).map((r) => r.id as string);
+
+  const { error: insertError } = await supabase.from("reference").insert(rows);
+  if (insertError) {
+    console.error("setReferencesForEntry: insert failed, existing references left untouched", insertError);
+    return { error: insertError.message };
+  }
+
+  if (oldIds.length > 0) {
+    const { error: deleteError } = await supabase.from("reference").delete().in("id", oldIds);
+    if (deleteError) {
+      // The new rows are already saved and correct; a failure to clean
+      // up the old ones just means a few stale duplicate rows linger
+      // rather than any data loss — log it, don't fail the save.
+      console.error("setReferencesForEntry: cleanup of old references failed", deleteError);
+    }
+  }
+
+  return { ok: true };
 }
 
 export async function createEntry(input: {
