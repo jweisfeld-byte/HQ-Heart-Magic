@@ -110,7 +110,7 @@ export function HqChatWidget({
             HQ Assistant
           </p>
           <p className="text-xs text-muted">
-            Answers grounded in Tasks, Projects, Funnels, Wholesale, Events &amp; Knowledge.
+            Answers grounded in Tasks, Projects, Funnels, Meta Ads, Wholesale, Events &amp; Knowledge.
           </p>
         </div>
         <button

@@ -189,6 +189,97 @@ export type MetaAdInsights = {
 // Trailing-30-day performance for a single ad. ROAS isn't included —
 // accuracy depends on Pixel/Conversions API setup that isn't confirmed
 // yet, so this sticks to metrics Meta reports directly off ad delivery.
+export type MetaAccountAdInsight = {
+  id: string;
+  name: string;
+  status: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+};
+
+export type MetaAccountInsightsSummary = {
+  ads: MetaAccountAdInsight[];
+  totals: { spend: number; impressions: number; clicks: number };
+  datePreset: string;
+};
+
+// Account-wide performance overview for the HQ Assistant (Jacob's ask:
+// "see all the data there" without having to link every single ad to a
+// funnel format first). Deliberately uses ONE bulk Graph API call at
+// level=ad (fields broken out per ad_id) rather than one getAdInsights()
+// call per ad — the per-funnel-linked path above is fine doing N calls
+// for a handful of linked ads, but the whole ad account could have
+// dozens/hundreds of ads, and this needs to stay cheap since it runs on
+// every chat message. Ad name/status come from the same insights
+// response (Meta includes ad_name on ad-level insights rows), so this
+// doesn't need a second call to listRecentAds() either.
+export async function getAdAccountInsightsSummary(
+  limit = 15,
+): Promise<MetaAccountInsightsSummary | { error: string } | null> {
+  const connection = await getMetaConnection();
+  if (!connection) return null;
+
+  try {
+    const url = new URL(`${GRAPH_API_BASE}/act_${connection.ad_account_id}/insights`);
+    url.searchParams.set("level", "ad");
+    url.searchParams.set("fields", "ad_id,ad_name,spend,impressions,clicks,ctr");
+    url.searchParams.set("date_preset", "last_30d");
+    url.searchParams.set("limit", "200");
+    url.searchParams.set("access_token", connection.access_token);
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const metaMessage = json?.error?.message;
+      return {
+        error: metaMessage
+          ? `Meta rejected the request: ${metaMessage}`
+          : `Meta API error (HTTP ${res.status}).`,
+      };
+    }
+    if (!json || !Array.isArray(json.data)) return { error: "Meta returned an unexpected response." };
+
+    type RawRow = {
+      ad_id: string;
+      ad_name: string;
+      spend?: string;
+      impressions?: string;
+      clicks?: string;
+      ctr?: string;
+    };
+
+    const rows: MetaAccountAdInsight[] = (json.data as RawRow[]).map((r) => ({
+      id: r.ad_id,
+      name: r.ad_name,
+      status: "",
+      spend: Number(r.spend ?? 0),
+      impressions: Number(r.impressions ?? 0),
+      clicks: Number(r.clicks ?? 0),
+      ctr: Number(r.ctr ?? 0),
+    }));
+
+    const totals = rows.reduce(
+      (acc, r) => ({
+        spend: acc.spend + r.spend,
+        impressions: acc.impressions + r.impressions,
+        clicks: acc.clicks + r.clicks,
+      }),
+      { spend: 0, impressions: 0, clicks: 0 },
+    );
+
+    const topAds = [...rows].sort((a, b) => b.spend - a.spend).slice(0, limit);
+
+    return { ads: topAds, totals, datePreset: "last_30d" };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Couldn't reach Meta — try again.",
+    };
+  }
+}
+
 export async function getAdInsights(adId: string): Promise<MetaAdInsights | null> {
   const connection = await getMetaConnection();
   if (!connection) return null;

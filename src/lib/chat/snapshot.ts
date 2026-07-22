@@ -5,7 +5,7 @@ import {
   getFunnelStages,
   getAssetsForStages,
 } from "@/lib/funnels/queries";
-import { getAdInsights } from "@/lib/meta/queries";
+import { getAdInsights, getAdAccountInsightsSummary } from "@/lib/meta/queries";
 import { getWholesaleAccounts, STAGE_LABELS } from "@/lib/wholesale/queries";
 import { getEvents } from "@/lib/events/queries";
 import { searchEntries } from "@/lib/search/queries";
@@ -123,6 +123,33 @@ export async function buildHqSnapshot(question: string): Promise<string> {
     sections.push(`MARKETING FUNNELS:\n${funnelLines.join("\n\n")}`);
   } else {
     sections.push("MARKETING FUNNELS: none recorded, or Funnels isn't set up yet.");
+  }
+
+  // --- Meta Ads account overview (independent of funnel linking) ---
+  // Jacob's ask: the assistant should be able to answer ad-performance
+  // questions even for ads that haven't been linked to a funnel format
+  // yet, using one bulk account-level API call rather than depending on
+  // manual per-format linking (that path is handled separately above,
+  // inside MARKETING FUNNELS, for whichever ads ARE linked).
+  const accountInsights = await getAdAccountInsightsSummary(15);
+  if (accountInsights && "ads" in accountInsights) {
+    if (accountInsights.ads.length > 0) {
+      const lines = accountInsights.ads.map(
+        (a) =>
+          `- "${a.name}" — $${a.spend.toFixed(2)} spend, ${a.impressions.toLocaleString()} impressions, ${a.clicks.toLocaleString()} clicks, ${a.ctr.toFixed(2)}% CTR`,
+      );
+      sections.push(
+        `META ADS ACCOUNT OVERVIEW (last 30 days, top ${accountInsights.ads.length} ads by spend, account-wide totals: $${accountInsights.totals.spend.toFixed(2)} spend / ${accountInsights.totals.impressions.toLocaleString()} impressions / ${accountInsights.totals.clicks.toLocaleString()} clicks):\n${lines.join("\n")}`,
+      );
+    } else {
+      sections.push(
+        "META ADS ACCOUNT OVERVIEW: connected, but no ad activity in the last 30 days.",
+      );
+    }
+  } else if (accountInsights && "error" in accountInsights) {
+    sections.push(`META ADS ACCOUNT OVERVIEW: ${accountInsights.error}`);
+  } else {
+    sections.push("META ADS ACCOUNT OVERVIEW: Meta Ads isn't connected yet — see Settings > Integrations.");
   }
 
   // --- Wholesale -----------------------------------------------------
