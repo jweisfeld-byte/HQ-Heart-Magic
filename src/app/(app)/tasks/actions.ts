@@ -10,6 +10,7 @@ import {
   setTaskAssignee,
   setTaskDueDate,
   updateTask,
+  deleteTask,
   STATUSES,
   RECURRENCES,
   type TaskStatus,
@@ -175,4 +176,22 @@ export async function changeTaskStatusAction(formData: FormData) {
   revalidatePath(`/tasks/${id}`);
   revalidatePath("/projects");
   revalidatePath("/events");
+}
+
+export async function deleteTaskAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+
+  if (!id) {
+    return;
+  }
+
+  const result = await deleteTask(id);
+  if ("error" in result) {
+    return;
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath("/projects");
+  revalidatePath("/events");
+  redirect("/tasks");
 }

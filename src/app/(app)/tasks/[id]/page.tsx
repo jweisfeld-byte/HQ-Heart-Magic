@@ -7,7 +7,7 @@ import {
   RECURRENCES,
   RECURRENCE_LABELS,
 } from "@/lib/tasks/queries";
-import { updateTaskAction } from "@/app/(app)/tasks/actions";
+import { updateTaskAction, deleteTaskAction } from "@/app/(app)/tasks/actions";
 import { listWorkspaceUsers } from "@/lib/settings/queries";
 import { getProjects } from "@/lib/projects/queries";
 import { getEvents } from "@/lib/events/queries";
@@ -200,6 +200,16 @@ export default async function TaskDetailPage({
             Save changes
           </button>
         </div>
+      </form>
+
+      <form action={deleteTaskAction} className="mt-8 border-t border-border pt-6">
+        <input type="hidden" name="id" value={task.id} />
+        <button
+          type="submit"
+          className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+        >
+          Delete task
+        </button>
       </form>
     </div>
   );

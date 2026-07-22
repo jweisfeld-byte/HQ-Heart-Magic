@@ -208,7 +208,13 @@ export async function setTaskStatus(
 
     if (error) return { error: error.message };
 
-    if (status === "done" && current && current.recurrence) {
+    // Only spawn the next occurrence on the actual not-done -> done
+    // transition — without the `current.status !== "done"` guard,
+    // re-selecting "Done" (or toggling it off and back on while
+    // testing) would spawn a fresh duplicate every single time, which
+    // is exactly what produced the triplicate "Weekly review" rows
+    // Jacob found on the board.
+    if (status === "done" && current && current.status !== "done" && current.recurrence) {
       const baseDate = current.due_date ?? new Date().toISOString().slice(0, 10);
       await supabase.from("task").insert({
         title: current.title,
@@ -350,5 +356,20 @@ export async function getTasksDueToday(): Promise<Task[] | null> {
     return data as Task[];
   } catch {
     return null;
+  }
+}
+
+export async function deleteTask(
+  id: string,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("task").delete().eq("id", id);
+    if (error) return { error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not delete task.",
+    };
   }
 }
