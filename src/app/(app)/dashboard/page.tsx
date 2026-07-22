@@ -352,13 +352,20 @@ export default async function DashboardPage() {
             same stub-card treatment as the rest of the not-yet-built
             briefing lines below, just placed right under Today's tasks. */}
         {revenueFocusCards.map(({ person, recommendation }) => {
+          const isMe = person.name === firstName;
           return (
             <div
               key={person.name}
               className="rounded-xl border border-border bg-surface p-4"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-medium text-foreground">
+                <span
+                  className={
+                    isMe
+                      ? "text-base font-semibold text-black"
+                      : "font-medium text-foreground"
+                  }
+                >
                   What&apos;s the one thing {person.name} can do today to drive the most revenue?
                 </span>
                 <span
@@ -371,7 +378,11 @@ export default async function DashboardPage() {
                   {recommendation ? "Live" : "Not connected yet"}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-muted">
+              <p
+                className={
+                  isMe ? "mt-1 text-base text-black" : "mt-1 text-sm text-muted"
+                }
+              >
                 {recommendation ??
                   "Waiting on an ANTHROPIC_API_KEY in Vercel to power this — see Settings."}
               </p>
