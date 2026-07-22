@@ -79,8 +79,8 @@ export default async function IntegrationsSettingsPage() {
       connected: discordWebhooks.length > 0,
       detail:
         discordWebhooks.length > 0
-          ? `${discordWebhooks.length} webhook${discordWebhooks.length === 1 ? "" : "s"} connected · weekly results post every Monday.`
-          : "Posts an automated weekly-results message (sales, conversion, top ads) to one or more Discord channels.",
+          ? `${discordWebhooks.length} webhook${discordWebhooks.length === 1 ? "" : "s"} connected · this week's content angle posts every Monday.`
+          : "Posts this week's published content angle/creative brief to your creator community every Monday.",
       action: null,
     },
   ];
@@ -245,8 +245,11 @@ export default async function IntegrationsSettingsPage() {
               <p className="text-xs text-muted">
                 In Discord: open the channel&apos;s settings &gt; Integrations &gt;
                 Webhooks &gt; New Webhook &gt; Copy Webhook URL, then paste it
-                above. A weekly-results message posts automatically every
-                Monday to every webhook added here.
+                above. Every Monday, whatever&apos;s currently published as
+                an Ad Angle or Ad Creative Brief under Marketing &gt; Meta
+                Ads posts automatically to every webhook added here — so
+                publish that week&apos;s direction there before Monday if you
+                want creators to see it.
               </p>
             </div>
           )}
