@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createFunnelAction } from "@/app/(app)/marketing/funnels/actions";
-import { StageNameRows } from "@/components/funnels/StageNameRows";
+import { StageRows } from "@/components/funnels/StageRows";
+import { AWARENESS_MODEL_STAGES } from "@/lib/funnels/queries";
 
 export default function NewFunnelPage() {
   return (
@@ -37,7 +38,7 @@ export default function NewFunnelPage() {
           />
         </div>
 
-        <StageNameRows initial={["Awareness", "Interest", "Decision", "Action"]} />
+        <StageRows initial={AWARENESS_MODEL_STAGES.map((s) => ({ name: s.name, strategy: s.strategy }))} />
 
         <div className="mt-2 flex gap-3">
           <button

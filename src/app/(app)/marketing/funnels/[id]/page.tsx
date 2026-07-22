@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getFunnelById, getFunnelStages } from "@/lib/funnels/queries";
+import { getFunnelById, getFunnelStages, getAssetsForStages } from "@/lib/funnels/queries";
 import {
   updateFunnelAction,
   deleteFunnelAction,
   addStageAction,
   renameStageAction,
-  setStageFileAction,
-  removeStageFileAction,
   deleteStageAction,
+  updateStageStrategyAction,
+  addAssetAction,
+  renameAssetAction,
+  setAssetFileAction,
+  removeAssetFileAction,
+  deleteAssetAction,
 } from "@/app/(app)/marketing/funnels/actions";
-import { FunnelTriangle } from "@/components/funnels/FunnelTriangle";
+import { FunnelTriangle, type FunnelTriangleStage } from "@/components/funnels/FunnelTriangle";
 import { FunnelStageDriveAttach } from "@/components/funnels/FunnelStageDriveAttach";
 
 export default async function FunnelDetailPage({
@@ -77,6 +81,16 @@ export default async function FunnelDetailPage({
   }
 
   const stages = (await getFunnelStages(funnel.id)) ?? [];
+  const assetsByStage = await getAssetsForStages(stages.map((s) => s.id));
+
+  const triangleStages: FunnelTriangleStage[] = stages.map((s) => {
+    const assets = assetsByStage[s.id] ?? [];
+    return {
+      ...s,
+      assetCount: assets.length,
+      filledAssetCount: assets.filter((a) => a.drive_file_id || a.file_url).length,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -101,7 +115,7 @@ export default async function FunnelDetailPage({
       </div>
 
       <div className="mt-8 flex justify-center rounded-xl border border-border bg-surface p-6">
-        <FunnelTriangle stages={stages} />
+        <FunnelTriangle stages={triangleStages} />
       </div>
 
       <div className="mt-8">
@@ -109,48 +123,112 @@ export default async function FunnelDetailPage({
           Stages
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Attach the actual creative for each step — the triangle above fills in as stages get an asset.
+          Each stage&apos;s creative strategy, plus every format built out for it — attach the actual asset from Google Drive.
         </p>
 
-        <div className="mt-4 flex flex-col gap-3">
-          {stages.map((stage) => (
-            <div
-              key={stage.id}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3"
-            >
-              <form action={renameStageAction} className="flex-1">
-                <input type="hidden" name="id" value={stage.id} />
-                <input type="hidden" name="funnelId" value={funnel.id} />
-                <input
-                  name="name"
-                  defaultValue={stage.name}
-                  onBlur={(e) => e.currentTarget.form?.requestSubmit()}
-                  className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-sm font-medium text-foreground hover:border-border focus:border-border focus:bg-background focus:outline-none"
-                />
-              </form>
+        <div className="mt-4 flex flex-col gap-4">
+          {stages.map((stage) => {
+            const assets = assetsByStage[stage.id] ?? [];
+            return (
+              <div key={stage.id} className="rounded-xl border border-border bg-surface p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <form action={renameStageAction} className="flex-1">
+                    <input type="hidden" name="id" value={stage.id} />
+                    <input type="hidden" name="funnelId" value={funnel.id} />
+                    <input
+                      name="name"
+                      defaultValue={stage.name}
+                      onBlur={(e) => e.currentTarget.form?.requestSubmit()}
+                      className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 font-display text-base font-semibold text-foreground hover:border-border focus:border-border focus:bg-background focus:outline-none"
+                    />
+                  </form>
+                  <form action={deleteStageAction}>
+                    <input type="hidden" name="id" value={stage.id} />
+                    <input type="hidden" name="funnelId" value={funnel.id} />
+                    <button
+                      type="submit"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:bg-accent/5 hover:text-red-600"
+                      aria-label="Remove stage"
+                    >
+                      Remove stage
+                    </button>
+                  </form>
+                </div>
 
-              <div className="w-64 shrink-0">
-                <FunnelStageDriveAttach
-                  stage={stage}
-                  funnelId={funnel.id}
-                  action={setStageFileAction}
-                  removeAction={removeStageFileAction}
-                />
+                <form action={updateStageStrategyAction} className="mt-2">
+                  <input type="hidden" name="id" value={stage.id} />
+                  <input type="hidden" name="funnelId" value={funnel.id} />
+                  <textarea
+                    name="strategy"
+                    defaultValue={stage.strategy}
+                    rows={2}
+                    onBlur={(e) => e.currentTarget.form?.requestSubmit()}
+                    placeholder="Creative strategy for this stage…"
+                    className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-sm text-muted hover:border-border focus:border-border focus:bg-background focus:outline-none"
+                  />
+                </form>
+
+                <div className="mt-3 flex flex-col gap-2">
+                  {assets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"
+                    >
+                      <form action={renameAssetAction} className="w-40 shrink-0">
+                        <input type="hidden" name="id" value={asset.id} />
+                        <input type="hidden" name="funnelId" value={funnel.id} />
+                        <input
+                          name="label"
+                          defaultValue={asset.label}
+                          onBlur={(e) => e.currentTarget.form?.requestSubmit()}
+                          className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
+                        />
+                      </form>
+                      <div className="flex-1">
+                        <FunnelStageDriveAttach
+                          stage={asset}
+                          funnelId={funnel.id}
+                          action={setAssetFileAction}
+                          removeAction={removeAssetFileAction}
+                        />
+                      </div>
+                      <form action={deleteAssetAction}>
+                        <input type="hidden" name="id" value={asset.id} />
+                        <input type="hidden" name="funnelId" value={funnel.id} />
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-border px-2 py-1 text-xs text-muted hover:bg-accent/5 hover:text-red-600"
+                          aria-label="Remove format"
+                        >
+                          ×
+                        </button>
+                      </form>
+                    </div>
+                  ))}
+
+                  {assets.length === 0 && (
+                    <p className="text-xs text-muted">No formats built out for this stage yet.</p>
+                  )}
+                </div>
+
+                <form action={addAssetAction} className="mt-3 flex items-center gap-2">
+                  <input type="hidden" name="stageId" value={stage.id} />
+                  <input type="hidden" name="funnelId" value={funnel.id} />
+                  <input
+                    name="label"
+                    placeholder="e.g. Founder Story Ad"
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/5"
+                  >
+                    + Add format
+                  </button>
+                </form>
               </div>
-
-              <form action={deleteStageAction}>
-                <input type="hidden" name="id" value={stage.id} />
-                <input type="hidden" name="funnelId" value={funnel.id} />
-                <button
-                  type="submit"
-                  className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:bg-accent/5 hover:text-red-600"
-                  aria-label="Remove stage"
-                >
-                  ×
-                </button>
-              </form>
-            </div>
-          ))}
+            );
+          })}
 
           {stages.length === 0 && (
             <div className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { FunnelStage } from "@/lib/funnels/queries";
 
 /**
  * Single-file Google Drive attach control for one funnel stage —
@@ -129,13 +128,23 @@ function buildAndShowPicker(
   }
 }
 
+type DriveAttachable = {
+  id: string;
+  file_label: string | null;
+  file_url: string | null;
+  drive_file_id: string | null;
+};
+
+// Generic — used both for a funnel_stage row and a funnel_stage_asset
+// row (each "format" within a stage), since both carry the same three
+// file_label/file_url/drive_file_id columns.
 export function FunnelStageDriveAttach({
   stage,
   funnelId,
   action,
   removeAction,
 }: {
-  stage: Pick<FunnelStage, "id" | "file_label" | "file_url" | "drive_file_id">;
+  stage: DriveAttachable;
   funnelId: string;
   action: (formData: FormData) => void;
   removeAction: (formData: FormData) => void;

@@ -1,5 +1,10 @@
 import type { FunnelStage } from "@/lib/funnels/queries";
 
+export type FunnelTriangleStage = FunnelStage & {
+  assetCount: number;
+  filledAssetCount: number;
+};
+
 type Point = readonly [number, number];
 
 function normalize([x, y]: Point): Point {
@@ -54,7 +59,7 @@ export function FunnelTriangle({
   stages,
   size = "large",
 }: {
-  stages: FunnelStage[];
+  stages: FunnelTriangleStage[];
   size?: "large" | "small";
 }) {
   const n = stages.length;
@@ -120,7 +125,7 @@ export function FunnelTriangle({
     const midY = yAtFraction(midF);
     const rightEdge = apexX + widthAtFraction(midF) / 2;
     const color = BAND_COLORS[index % BAND_COLORS.length];
-    const hasFile = Boolean(stage.drive_file_id || stage.file_url);
+    const hasFile = stage.filledAssetCount > 0;
 
     return { stage, path, midY, rightEdge, color, hasFile };
   });
@@ -165,11 +170,12 @@ export function FunnelTriangle({
       <path d={clipPath} fill="none" stroke="#57534e" strokeWidth={isSmall ? 1 : 1.5} />
 
       {!isSmall &&
-        bands.map(({ stage, midY, rightEdge, hasFile }) => (
+        bands.map(({ stage, midY, rightEdge }) => (
           <g key={stage.id}>
             <title>
-              {stage.name}
-              {hasFile ? ` — ${stage.file_label ?? "asset attached"}` : " — no asset yet"}
+              {stage.name} — {stage.filledAssetCount} of {stage.assetCount} format
+              {stage.assetCount === 1 ? "" : "s"} attached
+              {stage.strategy ? ` — ${stage.strategy}` : ""}
             </title>
             <line
               x1={rightEdge + 2}
@@ -182,11 +188,9 @@ export function FunnelTriangle({
             <text x={rightEdge + 20} y={midY} dominantBaseline="middle" fontSize={11} fill="currentColor">
               <tspan fontWeight={600}>{stage.name}</tspan>
               <tspan dx={6} fillOpacity={0.75}>
-                {hasFile
-                  ? (stage.file_label ?? "Asset attached").length > 26
-                    ? `${(stage.file_label ?? "Asset attached").slice(0, 26)}…`
-                    : stage.file_label ?? "Asset attached"
-                  : "No asset yet"}
+                {stage.assetCount === 0
+                  ? "No formats yet"
+                  : `${stage.filledAssetCount}/${stage.assetCount} format${stage.assetCount === 1 ? "" : "s"}`}
               </tspan>
             </text>
           </g>
